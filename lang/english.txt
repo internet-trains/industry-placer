@@ -1,0 +1,3 @@
+WELCOME		:Welcome to the Industry Creator game script!
+START		:Build script has started, you are advised to pause till script completion. Track progress in the Debug panel.
+END_START	:Build script has finished setup. Enjoy your game!

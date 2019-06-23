@@ -1,0 +1,20 @@
+Version 3
+=========
+Fix: Typo bug with random build method and secondary industries which causes crash.
+Fix: Typo bug in event handler.
+
+Changed: Greatly optimized and sped up town build method (thanks krinn and Zuu :) )
+Changed: Added some checks when building abnormal industries to prevent getting stuck.
+
+Version 2
+===========
+Fix: Crash when saving array of industry types, when using certain newgrfs.
+Fix: Typo bugs in parameters file, now 2 town settings can be changed correctly.
+
+Changed: Some default settings to make loading a little quicker.
+Changed: Loading a game no longer runs the build immediately, but waits for the set period as it should.
+Changed: Updated to Superlib v36.
+
+Version 1
+===========
+First Release!
