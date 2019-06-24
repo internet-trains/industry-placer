@@ -412,14 +412,6 @@ function IndustryConstructor::BuildIndustry() {
 // Special build method for special industries, uses "hard code" methods specific for each type
 // return 1 if built and 0 if not
 function IndustryConstructor::SpecialBuildMethod(INDUSTRY_ID) {
-
-	// Check if industry is not buildable
-	if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
-		// Display error
-		Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSTRY_ID) + " not buildable!", Log.LVL_INFO);
-		return 0;
-	}
-
 	// Switch ind id for each type, must be same as in SPECIALINDUSTRY_TYPES
 	switch(GSIndustryType.GetName(INDUSTRY_ID)) {
 		case SPECIALINDUSTRY_TYPES[0]:			// "Bank"
@@ -936,7 +928,6 @@ function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
 
 // Scattered build method function (3), return 1 if built and 0 if not
 function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
-
 	local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID); // Industry name string
 	local TILE_ID = null;
 	local BUILD_TRIES = ((256 * 256 * 3) * MAP_SCALE).tointeger();
