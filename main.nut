@@ -371,7 +371,6 @@ function IndustryConstructor::Init() {
 	this.INIT_PERFORMED = true;
 }
 
-// Build function
 // Builds industries in the order of their IDs
 function IndustryConstructor::BuildIndustry() {
 	// Display status msg
@@ -412,17 +411,17 @@ function IndustryConstructor::BuildIndustry() {
 
 // Special build method for special industries, uses "hard code" methods specific for each type
 // return 1 if built and 0 if not
-function IndustryConstructor::SpecialBuildMethod(INDUSRTY_ID) {
+function IndustryConstructor::SpecialBuildMethod(INDUSTRY_ID) {
 
 	// Check if industry is not buildable
-	if(!GSIndustryType.CanBuildIndustry(INDUSRTY_ID)) {
+	if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
 		// Display error
-		Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSRTY_ID) + " not buildable!", Log.LVL_INFO);
+		Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSTRY_ID) + " not buildable!", Log.LVL_INFO);
 		return 0;
 	}
 
 	// Switch ind id for each type, must be same as in SPECIALINDUSTRY_TYPES
-	switch(GSIndustryType.GetName(INDUSRTY_ID)) {
+	switch(GSIndustryType.GetName(INDUSTRY_ID)) {
 		case SPECIALINDUSTRY_TYPES[0]:			// "Bank"
 			// Check towns with pop > parameter
 			// - Create town list
@@ -438,7 +437,7 @@ function IndustryConstructor::SpecialBuildMethod(INDUSRTY_ID) {
 				return 0;
 			}
 			// Try prospect
-			if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+			if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 			break;
 		case SPECIALINDUSTRY_TYPES[1]:			// "Oil Rig"
 			// Check if current date is before param
@@ -447,7 +446,7 @@ function IndustryConstructor::SpecialBuildMethod(INDUSRTY_ID) {
 				return 0;
 			}
 			// Try prospect
-			if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+			if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 			break;
 		case SPECIALINDUSTRY_TYPES[2]:			// "Water Tower"
 			// Check towns with pop > parameter
@@ -464,17 +463,17 @@ function IndustryConstructor::SpecialBuildMethod(INDUSRTY_ID) {
 				return 0;
 			}
 			// Try prospect
-			if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+			if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 			break;
 		case SPECIALINDUSTRY_TYPES[3]:			// "Lumber Mill"
 			// Check if must not build param
 			if(GSController.GetSetting("SPEC_LBR_BOOL") == 0) return 0;
 			// Try prospect
-			if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+			if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 			break;
 		default:
 			// Display error
-			Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSRTY_ID) + " not supported!", Log.LVL_INFO);
+			Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSTRY_ID) + " not supported!", Log.LVL_INFO);
 	}
 	return 0;
 }
@@ -484,16 +483,16 @@ function IndustryConstructor::SpecialBuildMethod(INDUSRTY_ID) {
 // TO FIX NEED A 2D ARRAY FOR THAT LIST< THEN TO LOOP FOR EACH IND ID IF HIT ON TOWN
 // Town build method function (1)
 // return 1 if built and 0 if not
-function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
+function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
 
 	// Check if industry is not buildable
-	if(!GSIndustryType.CanBuildIndustry(INDUSRTY_ID)) {
+	if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
 		// Display error
 		Log.Error(" ~IndustryConstructor.TownBuildMethod: Industry not buildable!", Log.LVL_INFO);
 		return 0;
 	}
 
-	local IND_NAME = GSIndustryType.GetName(INDUSRTY_ID)						// Industry name string
+	local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID)						// Industry name string
 
 	// Assign and moderate map multiplier
 	local MULTI = 1;
@@ -512,7 +511,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 		// - Check to rather prospect
 		if(GSController.GetSetting("PROS_BOOL") == 1) {
 			// Try prospect
-			if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+			if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 			else return 0;
 		}
 		// - Check oil ind setting, and remove towns further from edge
@@ -532,7 +531,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 		local ISCLIMATE_ARCTIC = (GSGame.GetLandscape () == GSGame.LT_ARCTIC);
 		if(ISCLIMATE_ARCTIC == true) {
 			// - Check to rather prospect
-			if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSRTY_ID) ? 1 : 0; } // Try prospect
+			if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSTRY_ID) ? 1 : 0; } // Try prospect
 		}
 	}
 	// - Forest
@@ -540,7 +539,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 		// - Check climate
 		if(ISCLIMATE_ARCTIC == true) {
 			// - Check to rather prospect
-			if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSRTY_ID) ? 1 : 0; } // Try prospect
+			if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSTRY_ID) ? 1 : 0; } // Try prospect
 		}
 	}
 	// - Water Supply
@@ -549,7 +548,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 		local ISCLIMATE_TROPIC = (GSGame.GetLandscape () == GSGame.LT_TROPIC);
 		if(ISCLIMATE_TROPIC == true) {
 			// - Check to rather prospect
-			if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSRTY_ID) ? 1 : 0; } // Try prospect
+			if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSTRY_ID) ? 1 : 0; } // Try prospect
 		}
 	}
 
@@ -560,7 +559,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 		// If - TOWN_MULTI_BOOL
 		if(GSController.GetSetting("TOWN_MULTI_BOOL") == 0) {
 			// - If current list id == ind id, remove town
-			if(this.TOWNNODE_LIST_IND[i] == INDUSRTY_ID) LOCAL_TOWN_LIST.RemoveItem(this.TOWNNODE_LIST_TOWN[i])
+			if(this.TOWNNODE_LIST_IND[i] == INDUSTRY_ID) LOCAL_TOWN_LIST.RemoveItem(this.TOWNNODE_LIST_TOWN[i])
 		}
 
 		// Remove towns with max
@@ -672,7 +671,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 			}
 
 			// Try build
-			if(GSIndustryType.BuildIndustry(INDUSRTY_ID, BORDER_TILE) == true) {
+			if(GSIndustryType.BuildIndustry(INDUSTRY_ID, BORDER_TILE) == true) {
 
 				// Debug msg
 				Log.Info("   ~Built!", Log.LVL_DEBUG);
@@ -687,7 +686,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 						// Inc count in array
 						TOWNNODE_LIST_COUNT[i]++
 						// Set ind in array
-						TOWNNODE_LIST_IND[i] = INDUSRTY_ID;
+						TOWNNODE_LIST_IND[i] = INDUSTRY_ID;
 					}
 				}
 
@@ -696,7 +695,7 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 					// Add town to array
 					TOWNNODE_LIST_TOWN.push(TOWN_ID);
 					// Add ind id to array
-					TOWNNODE_LIST_IND.push(INDUSRTY_ID);
+					TOWNNODE_LIST_IND.push(INDUSTRY_ID);
 					// Add count to array
 					TOWNNODE_LIST_COUNT.push(1);
 				}
@@ -713,10 +712,10 @@ function IndustryConstructor::TownBuildMethod(INDUSRTY_ID) {
 }
 
 // Cluster build method function (2), return 1 if built and 0 if not
-function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
+function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
 
 	// Variables
-	local IND_NAME = GSIndustryType.GetName(INDUSRTY_ID)			// Industry name string
+	local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID)			// Industry name string
 	local LIST_VALUE = 0; // The point on the list surrently, to synchronise between lists
 	local NODE_TILE = null;
 	local MULTI = 0;
@@ -724,7 +723,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 	local IND_DIST = 0;
 
 	// Check if industry is not buildable
-	if(!GSIndustryType.CanBuildIndustry(INDUSRTY_ID)) {
+	if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
 		// Display error
 		Log.Error(" ~IndustryConstructor.ClusterBuildMethod: Industry not buildable!", Log.LVL_INFO);
 		return 0;
@@ -741,7 +740,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 		// - Loop through node list
 		for(local i = 0; i < CLUSTERNODE_LIST_IND.len(); i++) {
 			// - If node for industry exists
-			if(CLUSTERNODE_LIST_IND[i] == INDUSRTY_ID) {
+			if(CLUSTERNODE_LIST_IND[i] == INDUSTRY_ID) {
 				// - If industry count is less than or equal to global, node tile is that tile
 				if(CLUSTERNODE_LIST_COUNT[i] < GSController.GetSetting("CLUSTER_NODES")) {
 					// Set node tile
@@ -787,7 +786,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check oil ind setting, and compare to current tile and re loop if above
@@ -800,7 +799,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 					// - Check to rather prospect
 					if(GSController.GetSetting("PROS_BOOL") == 1) {
 						// Try prospect
-						if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+						if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 						else return 0;
 					}
 					// - Check if tile is snow and re loop if true
@@ -814,7 +813,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 					// - Check to rather prospect
 					if(GSController.GetSetting("PROS_BOOL") == 1) {
 						// Try prospect
-						if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+						if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 						else return 0;
 					}
 					// - Check if tile is not snow and re loop if true
@@ -828,7 +827,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 					// - Check to rather prospect
 					if(GSController.GetSetting("PROS_BOOL") == 1) {
 						// Try prospect
-						if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+						if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 						else return 0;
 					}
 					// - Check if tile is not desert and re loop if true
@@ -875,7 +874,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 		//	Log.Info("node fine", Log.LVL_INFO)
 
 			// Add to node list
-			CLUSTERNODE_LIST_IND.push(INDUSRTY_ID);
+			CLUSTERNODE_LIST_IND.push(INDUSTRY_ID);
 			CLUSTERNODE_LIST_COUNT.push(0);
 			CLUSTERTILE_LIST.push(NODE_TILE);
 			LIST_VALUE = CLUSTERTILE_LIST.len() - 1;
@@ -893,7 +892,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 	// - Set spiral walker on node tile
 	SPIRAL_WALKER.Start(NODE_TILE);
 	// Debug sign
-	if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(NODE_TILE,"Node tile: " + GSIndustryType.GetName (INDUSRTY_ID));
+	if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(NODE_TILE,"Node tile: " + GSIndustryType.GetName (INDUSTRY_ID));
 
 	// Loop till built
 	while(BUILD_TRIES > 0) {
@@ -917,7 +916,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 		}
 
 		// Try build
-		if (GSIndustryType.BuildIndustry(INDUSRTY_ID, TILE_ID) == true) {
+		if (GSIndustryType.BuildIndustry(INDUSTRY_ID, TILE_ID) == true) {
 			CLUSTERNODE_LIST_COUNT[LIST_VALUE]++
 			return 1;
 		}
@@ -936,9 +935,9 @@ function IndustryConstructor::ClusterBuildMethod(INDUSRTY_ID) {
 }
 
 // Scattered build method function (3), return 1 if built and 0 if not
-function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
+function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
 
-	local IND_NAME = GSIndustryType.GetName(INDUSRTY_ID); // Industry name string
+	local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID); // Industry name string
 	local TILE_ID = null;
 	local BUILD_TRIES = ((256 * 256 * 3) * MAP_SCALE).tointeger();
 	local TOWN_DIST = 0;
@@ -947,7 +946,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 	local MULTI = 0;
 
 	// Check if industry is not buildable
-	if(!GSIndustryType.CanBuildIndustry(INDUSRTY_ID)) {
+	if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
 		// Display error
 		Log.Error(" ~Industry not buildable!", Log.LVL_INFO);
 		return 0;
@@ -968,7 +967,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 			// - Check to rather prospect
 			if(GSController.GetSetting("PROS_BOOL") == 1) {
 				// Try prospect
-				if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+				if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 				else return 0;
 			}
 			// - Check oil ind setting, and compare to current tile and re loop if above
@@ -981,7 +980,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check if tile is snow and re loop if true
@@ -995,7 +994,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check if tile is not snow and re loop if true
@@ -1009,7 +1008,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check if tile is not desert and re loop if true
@@ -1035,7 +1034,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 		}
 
 		// Try build
-		if (GSIndustryType.BuildIndustry(INDUSRTY_ID, TILE_ID) == true) return 1;
+		if (GSIndustryType.BuildIndustry(INDUSTRY_ID, TILE_ID) == true) return 1;
 
 		// Increment and check counter
 		BUILD_TRIES--
@@ -1051,14 +1050,14 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSRTY_ID) {
 }
 
 // Random build method function (4), return 1 if built and 0 if not
-function IndustryConstructor::RandomBuildMethod(INDUSRTY_ID) {
+function IndustryConstructor::RandomBuildMethod(INDUSTRY_ID) {
 
-	local IND_NAME = GSIndustryType.GetName(INDUSRTY_ID); // Industry name string
+	local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID); // Industry name string
 	local TILE_ID = null;
 	local BUILD_TRIES = ((256 * 256 * 2) * MAP_SCALE).tointeger();
 
 	//Check if industry is not buildable
-	if(!GSIndustryType.CanBuildIndustry(INDUSRTY_ID)) {
+	if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
 		// Display error
 		Log.Error(" ~Industry not buildable!", Log.LVL_INFO);
 		return 0;
@@ -1075,7 +1074,7 @@ function IndustryConstructor::RandomBuildMethod(INDUSRTY_ID) {
 			// - Check to rather prospect
 			if(GSController.GetSetting("PROS_BOOL") == 1) {
 				// Try prospect
-				if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+				if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 				else return 0;
 			}
 			// - Check oil ind setting, and compare to current tile and re loop if above
@@ -1088,7 +1087,7 @@ function IndustryConstructor::RandomBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check if tile is snow and re loop if true
@@ -1102,7 +1101,7 @@ function IndustryConstructor::RandomBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check if tile is not snow and re loop if true
@@ -1116,7 +1115,7 @@ function IndustryConstructor::RandomBuildMethod(INDUSRTY_ID) {
 				// - Check to rather prospect
 				if(GSController.GetSetting("PROS_BOOL") == 1) {
 					// Try prospect
-					if(GSIndustryType.ProspectIndustry (INDUSRTY_ID) == true) return 1;
+					if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
 					else return 0;
 				}
 				// - Check if tile is not desert and re loop if true
@@ -1125,7 +1124,7 @@ function IndustryConstructor::RandomBuildMethod(INDUSRTY_ID) {
 		}
 
 		// Try build
-		if (GSIndustryType.BuildIndustry(INDUSRTY_ID, TILE_ID) == true) return 1;
+		if (GSIndustryType.BuildIndustry(INDUSTRY_ID, TILE_ID) == true) return 1;
 
 		// Increment and check counter
 		BUILD_TRIES--
