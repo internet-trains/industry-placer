@@ -387,6 +387,17 @@ function IndustryConstructor::SpecialBuildMethod(INDUSTRY_ID) {
     return 0;
 }
 
+// Helper function
+// Given a tile, returns true if the nearest industry is further away than
+// TOWN_MIN_IND as defined in config (minimum spacing between town and industry)
+function IndustryConstructor::FarFromIndustry(tile_id) {
+    if(this.GetClosestIndustry(tile_id) == null) {
+        return 1; // null case - no industries on map
+    }
+    local ind_distance = GSIndustry.GetDistanceManhattanToTile(this.GetClosestIndustry(tile_id), tile_id);
+    return ind_distance > (GSController.GetSetting("TOWN_MIN_IND") * MULTI);
+}
+
 // Map preprocess
 // Go through each town and identify every valid tile_id (do we have a way to ID the town of a tile?)
 function IndustryConstructor::BuildEligibleTownTiles() {
@@ -410,22 +421,20 @@ function IndustryConstructor::BuildEligibleTowns() {
     return eligible_towns
 }
 
+// Fetch eligible tiles belonging to the town with the given ID
+function IndustryConstructor::GetEligibleTownTiles(town_id) {
+    if(!eligible_towns.HasItem(town_id)) {
+        return null;
+    } else {
+        return eligible_town_tiles;
+    }
+}
+
 // Town build method function
 // return 1 if built and 0 if not
 function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
 
     local ind_name = GSIndustryType.GetName(INDUSTRY_ID);
-
-    // Assign and moderate map multiplier
-    local MULTI = 1;
-    if (MAP_SCALE <= MULTI)    MULTI = MAP_SCALE;
-
-    // Create town list for townbuilder
-    local LOCAL_TOWN_LIST = GSTownList();
-    // Valuate by population
-    LOCAL_TOWN_LIST.Valuate(GSTown.GetPopulation);
-    // Remove below parameter
-    LOCAL_TOWN_LIST.RemoveBelowValue(GSController.GetSetting("TOWN_MIN_POP"));
 
     // Check abnormal industries, for towns
     // - Oil Refinery
@@ -440,11 +449,11 @@ function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
         //   Mainly for speed purposes...
         if(GSGameSettings.IsValid("oil_refinery_limit") == true) {
             // Valuate by edge distance
-            LOCAL_TOWN_LIST.Valuate(GetTownDistFromEdge);
+            eligible_towns.Valuate(GetTownDistFromEdge);
             // Remove towns farther than max, including town radius
             local MAX_DIST = GSGameSettings.GetValue("oil_refinery_limit") + (GSController.GetSetting("TOWN_MAX_RADIUS") - 2)
             if(MAX_DIST < 0) MAX_DIST = 0;
-            LOCAL_TOWN_LIST.RemoveAboveValue(MAX_DIST);
+            eligible_towns.RemoveAboveValue(MAX_DIST);
         }
     }
     // - Farm
@@ -474,88 +483,16 @@ function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
         }
     }
 
-    // Loop through town list arrays
-    for(local i = 0; i < this.TOWNNODE_LIST_TOWN.len(); i++) {
-
-        // Remove towns with ind ID in if TOWN_MULTI_BOOL
-        // If - TOWN_MULTI_BOOL
-        if(GSController.GetSetting("TOWN_MULTI_BOOL") == 0) {
-            // - If current list id == ind id, remove town
-            if(this.TOWNNODE_LIST_IND[i] == INDUSTRY_ID) LOCAL_TOWN_LIST.RemoveItem(this.TOWNNODE_LIST_TOWN[i])
-        }
-
-        // Remove towns with max
-        // - If loop town count >= setting, remove from list
-        if(this.TOWNNODE_LIST_COUNT[i] >= GSController.GetSetting("TOWN_MAX_IND")) LOCAL_TOWN_LIST.RemoveItem(this.TOWNNODE_LIST_TOWN[i])
-    }
-
     // Check if the list is not empty
-    if(LOCAL_TOWN_LIST.IsEmpty() == true) {
-        Log.Error(" ~IndustryConstructor.TownBuildMethod: Town list is empty!", Log.LVL_INFO);
+    if(eligible_towns.IsEmpty() == true) {
+        Log.Error(" ~IndustryConstructor.TownBuildMethod: No more eligible towns.", Log.LVL_INFO);
         return 0;
     }
 
-    // Loop until tries are maxed (mainly debug)
-    local BUILD_TRIES = LOCAL_TOWN_LIST.Count() * 3;
-    while (BUILD_TRIES > 0) {
-
-        // Get start ID
-        local TOWN_ID = LOCAL_TOWN_LIST.Begin();
-        // Get random ID
-        for(local i = 0; i < GSBase.RandRange(LOCAL_TOWN_LIST.Count()); i++) {
-            TOWN_ID = LOCAL_TOWN_LIST.Next();
-        }
-        // Debug msg
-        Log.Info("   ~Trying to build in " + GSTown.GetName(TOWN_ID), Log.LVL_DEBUG);
-
-        // Create list of town tiles
-        //local TOWN_TILE_LIST = this.GetTownHouseList(TOWN_ID, CARGO_PAXID);
-        //(2nd option)//local TOWN_TILE_LIST = Tile.GetTownTiles(TOWN_ID);
-        local TOWN_RADIUS = (GSTown.GetHouseCount(TOWN_ID).tofloat() * (GSController.GetSetting("TOWN_MAX_RADIUS").tofloat() / 100.0)).tointeger();
-        local TOWN_TILE_LIST = Tile.MakeTileRectAroundTile(GSTown.GetLocation(TOWN_ID),TOWN_RADIUS);
-        // Debug msg
-        Log.Info("   ~Got town tile list!", Log.LVL_DEBUG);
-
-        // Get min/ max tiles
-        local MIN_MAX_TILE_LIST = ListMinMaxXY(TOWN_TILE_LIST, true)
-        // Debug msg
-        Log.Info("   ~Got min/max tile list!", Log.LVL_DEBUG);
-
-        // Create list for border tiles
-        local BORDER_TILE_LIST = Tile.GrowTileRect(TOWN_TILE_LIST, GSController.GetSetting("TOWN_MAX_RADIUS"));
-        // - Remove the town rectangle
-        BORDER_TILE_LIST.RemoveRectangle(MIN_MAX_TILE_LIST.Begin(), MIN_MAX_TILE_LIST.Next());
-        // Debug msg
-        Log.Info("   ~Got border tile list!", Log.LVL_DEBUG);
-
-        // Sort by random
-        BORDER_TILE_LIST.Valuate(GSBase.RandItem);
-        // Debug msg
-        Log.Info("   ~Got random list!", Log.LVL_DEBUG);
-
-        // Debug msg
-        Log.Info("   ~Got tile list!", Log.LVL_DEBUG);
-
-        // Loop for each tile in list
-        local BORDER_TILE = null;
-        local IND = null;
-        local IND_DIST = 0;
-        for(local i = 0; i < BORDER_TILE_LIST.Count(); i++) {
-
-            // If first loop, start at beginning
-            if(i == 0) BORDER_TILE = BORDER_TILE_LIST.Begin();
-            // Else go to next
-            else BORDER_TILE = BORDER_TILE_LIST.Next();
-
-            // If invalid tile, reloop
-            if(GSMap.IsValidTile(BORDER_TILE) == false) continue;
-
-            // If water tile, reloop
-            if(GSTile.IsWaterTile(BORDER_TILE) == true) continue;
-
-            // Debug msg
-            if(GSGameSettings.GetValue("log_level") >= 4)Log.Info(GSMap.IsValidTile(BORDER_TILE), Log.LVL_DEBUG);
-            if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(BORDER_TILE, "Try")
+    local town_id = eligible_towns[GSBase.RandRange(eligible_towns.Count())];
+    // Debug msg
+    Log.Info("   ~Trying to build in " + GSTown.GetName(town_id), Log.LVL_DEBUG);
+    local eligible_tiles = this.GetEligibleTownTiles(town_id);
 
             // Check abnormal industries
             local TILE_TERRAIN = GSTile.GetTerrainType(BORDER_TILE);
@@ -580,56 +517,23 @@ function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
                     if(TILE_TERRAIN != GSTile.TERRAIN_SNOW) continue;
                 }
             }
-
-            //Check dist from ind
-            // - Get industry
-            IND = this.GetClosestIndustry(BORDER_TILE);
-            // - If not null (null - no indusrties)
-            if(IND != null) {
-                // - Get distance
-                IND_DIST = GSIndustry.GetDistanceManhattanToTile(IND,BORDER_TILE);
-                // - If less than minimum, re loop
-                if(IND_DIST < (GSController.GetSetting("TOWN_MIN_IND") * MULTI)) continue;
-            }
-
-            // Try build
-            if(GSIndustryType.BuildIndustry(INDUSTRY_ID, BORDER_TILE) == true) {
-
-                // Debug msg
-                Log.Info("   ~Built!", Log.LVL_DEBUG);
-
-                // Loop through town list arrays
-                local EXIST_TOWN = false;
-                for(local i = 0; i < TOWNNODE_LIST_TOWN.len(); i++) {
-                    // If current town is in array
-                    if(TOWNNODE_LIST_TOWN[i] == TOWN_ID) {
-                        // Set bool
-                        EXIST_TOWN = true;
-                        // Inc count in array
-                        TOWNNODE_LIST_COUNT[i]++
-                        // Set ind in array
-                        TOWNNODE_LIST_IND[i] = INDUSTRY_ID;
-                    }
-                }
-
-                // If town was not in array
-                if(EXIST_TOWN == false) {
-                    // Add town to array
-                    TOWNNODE_LIST_TOWN.push(TOWN_ID);
-                    // Add ind id to array
-                    TOWNNODE_LIST_IND.push(INDUSTRY_ID);
-                    // Add count to array
-                    TOWNNODE_LIST_COUNT.push(1);
-                }
-                return 1;
-            }
+    // For each tile in the town tile list, try to build in one of them randomly
+    // - Maintain spacing as given by config file
+    // - Once built, remove the tile ID from the global eligible tile list
+    // - Two checks at the end:
+    //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
+    //    - Check if the town we just built in now no longer has any eligible tiles
+    foreach(tile_id in eligible_tiles) {
+        // Remove from global eligible tile list
+        local build_success = GSIndustryType.BuildIndustry(industry_id, tile_id);
+        if(build_success) {
+            // 1. Check town industry limit and remove town from global eligible town list if so
+            // 2. Check if town has any eligible tiles left in it from the global eligible tile list
+            return 1;
         }
-
-        // Dec tries
-        BUILD_TRIES--
     }
-    // Display error msg
-    Log.Error("IndustryConstructor.TownBuildMethod: Couldn't find a valid tile to set node on!", Log.LVL_INFO)
+    // Remove town from global eligible town list -- all tiles exhausted
+    Log.Error("IndustryConstructor.TownBuildMethod: Town exhausted.", Log.LVL_INFO)
     return 0;
 }
 
