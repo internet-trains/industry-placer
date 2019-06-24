@@ -68,6 +68,8 @@ class IndustryConstructor extends GSController {
     CLUSTERNODE_LIST_COUNT = []; // Sub-array of industry count, for cluster builder
     CLUSTERTILE_LIST = []; // Sub-array of node tiles, must be used with above 2D
 
+    eligible_town_tiles = [];
+    eligible_towns = [];
     TOWNNODE_LIST_TOWN = []; // Sub-array of town ids registered
     TOWNNODE_LIST_IND = []; // Sub-array of industry types, for town builder
     TOWNNODE_LIST_COUNT = []; // Sub-array of industry count, for town builder
@@ -179,9 +181,6 @@ function IndustryConstructor::Start() {
 
 // Initialization function
 function IndustryConstructor::Init() {
-    // Check GS continue
-    if(CONTINUE_GS == false) return;
-
     // Display status msg
     Log.Info("+==============================+", Log.LVL_INFO);
     Log.Info("Initializing...", Log.LVL_INFO);
@@ -202,7 +201,7 @@ function IndustryConstructor::Init() {
     if(GSGameSettings.IsValid("oil_refinery_limit") == true) {
         // - - Set to one in parameters
         GSGameSettings.SetValue("oil_refinery_limit", GSController.GetSetting("MAX_OIL_DIST"));
-        }
+    }
     // -- Else invalid
     else Log.Error("Max distance from edge for Oil Refineries setting could not be detected!", Log.LVL_INFO);
 
@@ -215,160 +214,78 @@ function IndustryConstructor::Init() {
         if(GSCargo.GetTownEffect(CARGO_ID) == GSCargo.TE_PASSENGERS) CARGO_PAXID = CARGO_ID;
     }
 
-    // If load has not happened, then this is a new game
-    if (this.LOAD_PERFORMED == false) {
-        // Display status msg
-        Log.Info(">This is a new game, preparing...", Log.LVL_INFO);
+    // Loop through list
+    foreach(IND_ID in IND_TYPE_LIST) {
+        // Get current ID name
+        IND_NAME = GSIndustryType.GetName(IND_ID);
 
-        // Check if there are industries on map (if user has not set to funding only error...)
-        // Define new industry list
-        local IND_LIST = GSIndustryList();
-        // Count industries
-        local IND_LIST_COUNT = IND_LIST.Count();
+        // Loop through special list
+        foreach(SPECIAL_NAME in SPECIALINDUSTRY_TYPES) {
+            // If current ID name is a special = SPECIALINDUSTRY_LIST
+            if(IND_NAME == SPECIAL_NAME) {
+                // Display industry type name msg
+                Log.Info(" ~Special Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
 
-        // If there are industries on the map
-        if (IND_LIST_COUNT > 0) {
-            // Display error msg
-            Log.Warning(">There are " + IND_LIST_COUNT + " industries on the map, when there must be none!", Log.LVL_INFO);
+                // Add industry id to raw list
+                SPECIALINDUSTRY_LIST.push(IND_ID);
 
-            // Set GS continue to false
-            CONTINUE_GS = false;
-
-            // End function
-            return;
+                // Assign true and end loop
+                IS_SPECIAL = true;
+                break;
+            }
         }
-        // Else no industries
+
+        // If the current ID was special
+        if(IS_SPECIAL == true) {
+            // Reset and jump to next id
+            IS_SPECIAL = false;
+            continue;
+        }
+
+        // If current ID is a raw producer = RAWINDUSTRY_LIST
+        if (GSIndustryType.IsRawIndustry(IND_ID)) {
+            // Display industry type name msg
+            Log.Info(" ~Raw Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
+
+            // Add industry id to raw list
+            RAWINDUSTRY_LIST.push(IND_ID);
+        }
+        //else not a raw producer
         else {
-            local IS_SPECIAL = false;
-            local IND_NAME = "";
-            // Display status msg
-            Log.Info(">There are " + IND_TYPE_COUNT + " industry types.", Log.LVL_INFO);
+            // If current ID is a processor = PROCINDUSTRY_LIST
+            if (GSIndustryType.IsProcessingIndustry(IND_ID)) {
+                // Display industry type name msg
+                Log.Info(" ~Processor Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
 
-            // Loop through list
-            foreach(IND_ID, _ in IND_TYPE_LIST) {
-                // Get current ID name
-                IND_NAME = GSIndustryType.GetName(IND_ID);
+                // Add industry id to processor list
+                PROCINDUSTRY_LIST.push(IND_ID);
+            }
+            // Else is an other industry = TERTIARYINDUSTRY_LIST
+            else {
+                // Display industry type name msg
+                Log.Info(" ~Tertiary Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
 
-                // Loop through special list
-                foreach(SPECIAL_NAME in SPECIALINDUSTRY_TYPES) {
-                    // If current ID name is a special = SPECIALINDUSTRY_LIST
-                    if(IND_NAME == SPECIAL_NAME) {
-                        // Display industry type name msg
-                        Log.Info(" ~Special Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
-
-                        // Add industry id to raw list
-                        SPECIALINDUSTRY_LIST.push(IND_ID);
-
-                        // Assign true and end loop
-                        IS_SPECIAL = true;
-                        break;
-                    }
-                }
-
-                // If the current ID was special
-                if(IS_SPECIAL == true) {
-                    // Reset and jump to next id
-                    IS_SPECIAL = false;
-                    continue;
-                }
-
-                // If current ID is a raw producer = RAWINDUSTRY_LIST
-                if (GSIndustryType.IsRawIndustry(IND_ID)) {
-                    // Display industry type name msg
-                    Log.Info(" ~Raw Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
-
-                    // Add industry id to raw list
-                    RAWINDUSTRY_LIST.push(IND_ID);
-                }
-                //else not a raw producer
-                else {
-                    // If current ID is a processor = PROCINDUSTRY_LIST
-                    if (GSIndustryType.IsProcessingIndustry(IND_ID)) {
-                        // Display industry type name msg
-                        Log.Info(" ~Processor Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
-
-                        // Add industry id to processor list
-                        PROCINDUSTRY_LIST.push(IND_ID);
-                    }
-                    // Else is an other industry = TERTIARYINDUSTRY_LIST
-                    else {
-                        // Display industry type name msg
-                        Log.Info(" ~Tertiary Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
-
-                        // Add industry id to other list
-                        TERTIARYINDUSTRY_LIST.push(IND_ID);
-                    }
-                }
+                // Add industry id to other list
+                TERTIARYINDUSTRY_LIST.push(IND_ID);
             }
         }
     }
-    // Else not a new game
-    else {
-        // Display status msg
-        Log.Info(">This is a loaded game, preparing...", Log.LVL_INFO);
-    }
-
-    // Count lists
-    RAWINDUSTRY_LIST_COUNT = RAWINDUSTRY_LIST.len();
-    PROCINDUSTRY_LIST_COUNT = PROCINDUSTRY_LIST.len();
-    TERTIARYINDUSTRY_LIST_COUNT = TERTIARYINDUSTRY_LIST.len();
-    SPECIALINDUSTRY_LIST_COUNT = SPECIALINDUSTRY_LIST.len();
-
-    // Display statuses
-    Log.Info(">There are " + RAWINDUSTRY_LIST_COUNT + " Primary industry types.", Log.LVL_INFO);
-    Log.Info(">There are " + PROCINDUSTRY_LIST_COUNT + " Secondary industry types.", Log.LVL_INFO);
-    Log.Info(">There are " + TERTIARYINDUSTRY_LIST_COUNT + " Tertiary industry types.", Log.LVL_INFO);
-    Log.Info(">There are " + SPECIALINDUSTRY_LIST_COUNT + " Special industry types.", Log.LVL_INFO);
 
     // Import settings
-    // - Determine map multiplier, as float
-    MAP_SCALE = (MAP_SIZE_X / 256.0) * (MAP_SIZE_Y / 256.0)
-
-    // - Display status msg
-    Log.Info(">Map size scale is: " + MAP_SCALE, Log.LVL_INFO);
 
     // - Assign settings
-    local RAW_PROP = GSController.GetSetting("DENSITY_RAW_PROP").tofloat();
-        if(RAWINDUSTRY_LIST_COUNT < 1) RAW_PROP = 0.0;
-    local PROC_PROP = GSController.GetSetting("DENSITY_PROC_PROP").tofloat();
-        if(PROCINDUSTRY_LIST_COUNT < 1) PROC_PROP = 0.0;
-    local TERT_PROP = GSController.GetSetting("DENSITY_TERT_PROP").tofloat();
-        if(TERTIARYINDUSTRY_LIST_COUNT < 1) TERT_PROP = 0.0;
-    local SPEC_PROP = GSController.GetSetting("DENSITY_SPEC_PROP").tofloat();
-        if(SPECIALINDUSTRY_LIST_COUNT < 1) SPEC_PROP = 0.0;
-    local TOTAL_PROP = RAW_PROP + PROC_PROP + TERT_PROP + SPEC_PROP;
+    local RAW_COUNT = GSController.GetSetting("RAW_COUNT");
+        if(RAWINDUSTRY_LIST_COUNT < 1) RAW_PROP = 0;
+    local PROC_COUNT = GSController.GetSetting("PROC_COUNT").tofloat();
+        if(PROCINDUSTRY_LIST_COUNT < 1) PROC_PROP = 0;
+    local TERT_COUNT = GSController.GetSetting("TERT_COUNT").tofloat();
+        if(TERTIARYINDUSTRY_LIST_COUNT < 1) TERT_PROP = 0;
+    local SPEC_COUNT = GSController.GetSetting("SPEC_COUNT").tofloat();
+        if(SPECIALINDUSTRY_LIST_COUNT < 1) SPEC_PROP = 0;
 
-    DENSITY_IND_TOTAL = (GSController.GetSetting("DENSITY_IND_TOTAL") * MAP_SCALE).tointeger();
-        // Make 1 if below
-    if (DENSITY_IND_TOTAL < 1) DENSITY_IND_TOTAL = 1;
-    DENSITY_IND_MIN = GSController.GetSetting("DENSITY_IND_MIN").tofloat() / 100.0;
-    DENSITY_IND_MAX = GSController.GetSetting("DENSITY_IND_MAX").tofloat() / 100.0;
-    DENSITY_RAW_PROP = (GSController.GetSetting("DENSITY_RAW_PROP").tofloat() / TOTAL_PROP);
-        if(RAWINDUSTRY_LIST_COUNT < 1) DENSITY_RAW_PROP = 0;
-    DENSITY_PROC_PROP = (GSController.GetSetting("DENSITY_PROC_PROP").tofloat() / TOTAL_PROP);
-        if(PROCINDUSTRY_LIST_COUNT < 1) DENSITY_PROC_PROP = 0;
-    DENSITY_TERT_PROP = (GSController.GetSetting("DENSITY_TERT_PROP").tofloat() / TOTAL_PROP);
-        if(TERTIARYINDUSTRY_LIST_COUNT < 1) DENSITY_TERT_PROP = 0;
-    DENSITY_SPEC_PROP = (GSController.GetSetting("DENSITY_SPEC_PROP").tofloat() / TOTAL_PROP);
-        if(SPECIALINDUSTRY_LIST_COUNT < 1) DENSITY_SPEC_PROP = 0;
-    DENSITY_RAW_METHOD = GSController.GetSetting("DENSITY_RAW_METHOD");
-    DENSITY_PROC_METHOD = GSController.GetSetting("DENSITY_PROC_METHOD");
-    DENSITY_TERT_METHOD = GSController.GetSetting("DENSITY_TERT_METHOD");
-
-    // - Display status msgs
-    Log.Info(">Total industries assigned: " + DENSITY_IND_TOTAL, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Min per industry assigned: " + DENSITY_IND_MIN, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Max per industry assigned: " + DENSITY_IND_MAX, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Primary industry proportion assigned: " + DENSITY_RAW_PROP, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Secondary industry proportion assigned: " + DENSITY_PROC_PROP, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Tertiary industry proportion assigned: " + DENSITY_TERT_PROP, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Special industry proportion assigned: " + DENSITY_SPEC_PROP, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Primary industry method assigned: " + DENSITY_RAW_METHOD, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Secondary industry method assigned: " + DENSITY_PROC_METHOD, Log.LVL_SUB_DECISIONS);
-    Log.Info(">Tertiary industry method assigned: " + DENSITY_TERT_METHOD, Log.LVL_SUB_DECISIONS);
-
-    // Declare function status
-    this.INIT_PERFORMED = true;
+    // Preprocess map
+    this.eligible_towns = this.BuildEligibleTowns();
+    this.eligible_town_tiles = this.BuildEligibleTownTiles();
 }
 
 // Builds industries in the order of their IDs
@@ -468,6 +385,29 @@ function IndustryConstructor::SpecialBuildMethod(INDUSTRY_ID) {
             Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSTRY_ID) + " not supported!", Log.LVL_INFO);
     }
     return 0;
+}
+
+// Map preprocess
+// Go through each town and identify every valid tile_id (do we have a way to ID the town of a tile?)
+function IndustryConstructor::BuildEligibleTownTiles() {
+
+    /*
+    1. get every town
+    2. get every tile in every town
+    3. cull based on config parameters
+     */
+
+    return eligible_town_tiles;
+}
+
+// Town preprocess
+// Go through every town and identify valid towns
+function IndustryConstructor::BuildEligibleTowns() {
+    /*
+    1. get all towns
+    2. cull based on config parameters
+     */
+    return eligible_towns
 }
 
 // Town build method function
