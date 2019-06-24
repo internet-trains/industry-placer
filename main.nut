@@ -371,279 +371,43 @@ function IndustryConstructor::Init() {
 	this.INIT_PERFORMED = true;
 }
 
-//Function to call to build industries.
-//Call to build initial and each refresh period
-//Runs through each industry class, checks if it has built that class already, builds random class once if not and sets to true,
-//     if all have been built resets all to false up until global max per refresh
-//Builds a global set proportion of each industry class, minimum 1 of each industry.
-//Checks how many of each industry are existing (if 0 then has a chance to build 1).
-//Builds up to a random number of each industry, between min and max according to proportion.
-//Builds each industry according to build method.
-//Accounts for special industry types.
-
 // Build function
+// Builds industries in the order of their IDs
 function IndustryConstructor::BuildIndustry() {
-	// Check GS continue, to exit
-	if(CONTINUE_GS == false) return;
-
 	// Display status msg
 	Log.Info("+==============================+", Log.LVL_INFO);
 	Log.Info("Building industries...", Log.LVL_INFO);
 
-	// Check initiaized
-	if (this.INIT_PERFORMED == false){
-		// Display error msg
-		Log.Error(">IndustryConstructor.Build: Script uninitialized!", Log.LVL_INFO);
-		return;
-	}
+	// Iterate through the list of all industries
+	Log.Info(" ~Building " + BUILD_TARGET + " " + GSIndustryType.GetName(CURRENT_IND_ID), Log.LVL_SUB_DECISIONS);
 
-	// If first build has not happened, then this is a new game
-	local LOCAL_BUILD_LIMIT = 0; // Build limit in this function
-	local LOCAL_IND_MAX = 0.0; // Max factor in this function
-	if (FIRSTBUILD_PERFORMED == false){
-		// If global build count is less than 1 minumum per ind set to 1, else set to global max
-		if(DENSITY_IND_TOTAL < IND_TYPE_COUNT) LOCAL_BUILD_LIMIT = IND_TYPE_COUNT;
-		else LOCAL_BUILD_LIMIT = DENSITY_IND_TOTAL;
-
-		// Set max factor to 1
-		LOCAL_IND_MAX = 1.0;
-
-		// Display status msg
-		Log.Info(">This is a new game, build limit is: " + LOCAL_BUILD_LIMIT, Log.LVL_INFO);
-
-		// Set first build
-		FIRSTBUILD_PERFORMED = true;
-	}
-	// Else build has happened
-	else{
-		// Set build limit to a random up to global
-		LOCAL_BUILD_LIMIT = GSBase.RandRange(BUILD_LIMIT + 1);
-
-		// Set max factor to global
-		LOCAL_IND_MAX = DENSITY_IND_MAX;
-
-		// Display status msg
-		Log.Info(">This is a continuing game, build limit is: " + LOCAL_BUILD_LIMIT + " / " + BUILD_LIMIT + " (Max)", Log.LVL_INFO);
-	}
-
-	// Loop until build limit is reached
-	local BUILD_COUNT = 0; // Total build count for each build function
-	local CURRENT_METHOD = null; // Current build method for each loop
-	local CURRENT_IND_PROP = null; // Current industry proportion for each loop
-	local CURRENT_LIST = null; // Current industry list for each loop
-	local CURRENT_LIST_COUNT = 0; // Count of current list for each loop
-	local BUILD_CONTINUE = true;
-	local BUILD_NOW = null; // Switch setting for which class to build
-
-	// Loop while below current build limit
-	while(LOCAL_BUILD_LIMIT - BUILD_COUNT > 0){
-
-		// Set parameters for loop
-		// - Set multi industries per town to one in param
-		// - -  Check if valid
-		if(GSGameSettings.IsValid("multiple_industry_per_town") == true){
-			// - - Set to one in parameters
-			GSGameSettings.SetValue("multiple_industry_per_town", GSController.GetSetting("MULTI_IND_TOWN"));
-		}
-		//
-
-		// reset loop
-		BUILD_CONTINUE = true;
-		// Selects a random industry class, not yet built....GSBase.RandRange(Max - 1)
-		// - Build "town" first
-		BUILD_NOW = GSBase.RandRange(4);
-		if(PRIMARY_PERFORMED == false && DENSITY_RAW_METHOD == 1) BUILD_NOW = 0;
-		if(SECONDARY_PERFORMED == false && DENSITY_PROC_METHOD == 1) BUILD_NOW = 1;
-		if(TERTIARY_PERFORMED == false && DENSITY_RAW_METHOD == 1) BUILD_NOW = 2;
-
-		switch(BUILD_NOW)
-		{
-			case 0:
-				if(RAWINDUSTRY_LIST_COUNT < 1) PRIMARY_PERFORMED = true;
-				if(PRIMARY_PERFORMED == true){
-					BUILD_CONTINUE = false;
+	foreach(industry_id in GSIndustryTypeList) {
+		build_method = LookupIndustryBuildMethod(industry_id);
+		for(local i = 0; i < BUILD_TARGET; i++) {
+			// Build
+			switch(build_method) {
+				case 1:
+					// Increment count using town build
+					CURRENT_BUILD_COUNT += TownBuildMethod(CURRENT_IND_ID);
 					break;
-				}
-				Log.Info("+------------------------------+", Log.LVL_INFO);
-				Log.Info(">Building primary industries", Log.LVL_INFO);
-				CURRENT_LIST = RAWINDUSTRY_LIST;
-				CURRENT_LIST_COUNT = RAWINDUSTRY_LIST_COUNT;
-				CURRENT_METHOD = DENSITY_RAW_METHOD;
-				CURRENT_IND_PROP = DENSITY_RAW_PROP;
-				PRIMARY_PERFORMED = true;
-				break;
-			case 1:
-				if(PROCINDUSTRY_LIST_COUNT < 1) SECONDARY_PERFORMED = true;
-				if(SECONDARY_PERFORMED){
-					BUILD_CONTINUE = false;
+				case 2:
+					// Increment count using cluster build
+					CURRENT_BUILD_COUNT += ClusterBuildMethod(CURRENT_IND_ID);
 					break;
-				}
-				Log.Info("+------------------------------+", Log.LVL_INFO);
-				Log.Info(">Building secondary industries", Log.LVL_INFO);
-				CURRENT_LIST = PROCINDUSTRY_LIST;
-				CURRENT_LIST_COUNT = PROCINDUSTRY_LIST_COUNT;
-				CURRENT_METHOD = DENSITY_PROC_METHOD;
-				CURRENT_IND_PROP = DENSITY_PROC_PROP;
-				SECONDARY_PERFORMED = true;
-				break;
-			case 2:
-				if(TERTIARYINDUSTRY_LIST_COUNT < 1) TERTIARY_PERFORMED = true;
-				if(TERTIARY_PERFORMED == true){
-					BUILD_CONTINUE = false;
+				case 3:
+					// Increment count using scatter build
+					CURRENT_BUILD_COUNT += ScatteredBuildMethod(CURRENT_IND_ID);
 					break;
-				}
-				Log.Info("+------------------------------+", Log.LVL_INFO);
-				Log.Info("Building tertiary industries", Log.LVL_INFO);
-				CURRENT_LIST = TERTIARYINDUSTRY_LIST;
-				CURRENT_LIST_COUNT = TERTIARYINDUSTRY_LIST_COUNT;
-				CURRENT_METHOD = DENSITY_TERT_METHOD;
-				CURRENT_IND_PROP = DENSITY_TERT_PROP;
-				TERTIARY_PERFORMED = true;
-				break;
-			case 3:
-				if(SPECIALINDUSTRY_LIST_COUNT < 1) SPECIAL_PERFORMED = true;
-				if(SPECIAL_PERFORMED == true){
-					BUILD_CONTINUE = false;
+				case 4:
+					// Increment count using special build
+					CURRENT_BUILD_COUNT += SpecialBuildMethod(CURRENT_IND_ID);
 					break;
-				}
-				Log.Info("+------------------------------+", Log.LVL_INFO);
-				Log.Info(">Building special industries", Log.LVL_INFO);
-				CURRENT_LIST = SPECIALINDUSTRY_LIST;
-				CURRENT_LIST_COUNT = SPECIALINDUSTRY_LIST_COUNT;
-				CURRENT_METHOD = 5; // Special case non-selectable
-				CURRENT_IND_PROP = DENSITY_SPEC_PROP; // ???
-				SPECIAL_PERFORMED = true;
-				break;
-			default:
-				// Display error msg
-				Log.Error(">IndustryConstructor.BuildIndustryClass: Incorrect industry class chosen!", Log.LVL_INFO);
-				return;
-		}
-
-		// Check to continue loop
-		if(BUILD_CONTINUE == false) continue;
-
-		// Set densities
-		// Mins are how much a map will start with and the start count for building extra.
-		// Maxes are how much a map could get based on chance. At least 1 per industry
-
-		local CLASS_MIN	= 0; // Integer, could be 0.
-		local CLASS_MAX = 0; // Int, at least 1 per industry and CLASS_MIN
-		local IND_MIN = 0; // Integer truncated float, could be 0
-		local IND_MAX = 0; // Integer truncated float, always >= 1
-		//// Min density per industry class is:
-		//CLASS_MIN = (DENSITY_IND_TOTAL.tofloat() * CURRENT_IND_PROP).tointeger();
-		//	if(CLASS_MIN < 1) CLASS_MIN = 1;
-		//Log.Info(" ~Industry class minimum is: " + CLASS_MIN, Log.LVL_INFO);
-		//// Max density per industry class is:
-		//CLASS_MAX = CLASS_MIN;
-		//	if(CLASS_MAX < CURRENT_LIST_COUNT) CLASS_MAX = CURRENT_LIST_COUNT;
-		//Log.Info(" ~Industry class maximum is: " + CLASS_MAX, Log.LVL_INFO);
-
-		// Min per industry is:
-		//IND_MIN = ((CLASS_MIN.tofloat() / CURRENT_LIST_COUNT.tofloat()) * DENSITY_IND_MIN).tointeger();
-		//Log.Info(" ~Industry type minimum is: " + IND_MIN, Log.LVL_INFO);
-		//// Max per industry is:
-		//IND_MAX = ((CLASS_MAX.tofloat() / CURRENT_LIST_COUNT.tofloat()) * LOCAL_IND_MAX).tointeger();
-		//Log.Info(" ~Industry type maximum is: " + IND_MAX, Log.LVL_INFO);
-
-
-		// Min density per industry class is:
-		CLASS_MIN = (DENSITY_IND_TOTAL.tofloat() * CURRENT_IND_PROP * DENSITY_IND_MIN).tointeger();
-			if(CLASS_MIN < 1) CLASS_MIN = 1;
-		Log.Info(" ~Industry class minimum is: " + CLASS_MIN, Log.LVL_INFO);
-		// Max density per industry class is:
-		CLASS_MAX = (DENSITY_IND_TOTAL.tofloat() * CURRENT_IND_PROP * LOCAL_IND_MAX).tointeger();
-			if(CLASS_MAX < CURRENT_LIST_COUNT) CLASS_MAX = CURRENT_LIST_COUNT;
-		Log.Info(" ~Industry class maximum is: " + CLASS_MAX, Log.LVL_INFO);
-
-		// Min per industry is:
-		IND_MIN = ((CLASS_MIN.tofloat() / CURRENT_LIST_COUNT.tofloat())).tointeger();
-		Log.Info(" ~Industry type minimum is: " + IND_MIN, Log.LVL_INFO);
-		// Max per industry is:
-		IND_MAX = ((CLASS_MAX.tofloat() / CURRENT_LIST_COUNT.tofloat())).tointeger();
-		Log.Info(" ~Industry type maximum is: " + IND_MAX, Log.LVL_INFO);
-
-		// Loop through each industry in current list
-		foreach(CURRENT_IND_ID in CURRENT_LIST){
-
-		// Display status
-		Log.Info(" ~Analyzing "+ GSIndustryType.GetName(CURRENT_IND_ID) + " (ID:  " + CURRENT_IND_ID + ")", Log.LVL_SUB_DECISIONS);
-
-		// Count existing for ind id
-		// - Create list (ALL INDUSTRIES)
-		local EXIST_IND_LIST = GSIndustryList();
-		local EXIST_IND_COUNT = 0; // Count of current industry type
-		// - Loop through current list
-		foreach(EXIST_IND_ID,_ in EXIST_IND_LIST){
-			// If match then inc count
-			if(GSIndustry.GetIndustryType(EXIST_IND_ID) == CURRENT_IND_ID) EXIST_IND_COUNT++;
-		}
-		Log.Info(" ~Existing "+ GSIndustryType.GetName(CURRENT_IND_ID) + " count is: " + EXIST_IND_COUNT + " / " + IND_MAX + " (Max)", Log.LVL_SUB_DECISIONS);
-
-		// Set build target
-		local BUILD_TARGET = 0; // Random target for each function to build
-		BUILD_TARGET = (IND_MIN - EXIST_IND_COUNT) + (GSBase.RandRange(IND_MAX + 1 - IND_MIN));
-			if(BUILD_TARGET > (LOCAL_BUILD_LIMIT - BUILD_COUNT)) BUILD_TARGET = (LOCAL_BUILD_LIMIT - BUILD_COUNT);
-
-		if(BUILD_TARGET > 0){
-			// Display status
-			Log.Info(" ~Building " + BUILD_TARGET + " " + GSIndustryType.GetName(CURRENT_IND_ID), Log.LVL_SUB_DECISIONS);
-
-			//Loop for each industry to build
-			local CURRENT_BUILD_COUNT = 0;
-			for(local i = 0; i < BUILD_TARGET; i++){
-				// Build
-				switch(CURRENT_METHOD){
-					case 1:
-						// Increment count using town build
-						CURRENT_BUILD_COUNT += TownBuildMethod(CURRENT_IND_ID);
-						break;
-					case 2:
-						// Increment count using cluster build
-						CURRENT_BUILD_COUNT += ClusterBuildMethod(CURRENT_IND_ID);
-						break;
-					case 3:
-						// Increment count using scatter build
-						CURRENT_BUILD_COUNT += ScatteredBuildMethod(CURRENT_IND_ID);
-						break;
-					case 4:
-						// Increment count using random build
-						CURRENT_BUILD_COUNT += RandomBuildMethod(CURRENT_IND_ID);
-						break;
-					case 5:
-						// Increment count using special build
-						CURRENT_BUILD_COUNT += SpecialBuildMethod(CURRENT_IND_ID);
-						break;
-					default:
-						// Display error msg
-						Log.Error(" ~IndustryConstructor.BuildSwitch: Incorrect build method chosen!", Log.LVL_INFO);
-						break;
-					}
-				this.ErrorHandler();
-				}
+			this.ErrorHandler();
+			}
 			// Display status
 			Log.Info(" ~Built " + CURRENT_BUILD_COUNT + " / " + BUILD_TARGET, Log.LVL_SUB_DECISIONS);
-
-			// Update build count
-			BUILD_COUNT += CURRENT_BUILD_COUNT;
-			}
 		}
-	// Display status
-	Log.Info(">Build a current total of: " + BUILD_COUNT + " / " + LOCAL_BUILD_LIMIT, Log.LVL_INFO);
-
-	// Reset randoms if necessary
-	if(PRIMARY_PERFORMED == true && SECONDARY_PERFORMED == true && TERTIARY_PERFORMED == true && SPECIAL_PERFORMED){
-		PRIMARY_PERFORMED = false;
-		SECONDARY_PERFORMED = false;
-		TERTIARY_PERFORMED = false;
-		SPECIAL_PERFORMED = false;
-		// Display status
-		Log.Info("+------------------------------+", Log.LVL_INFO);
-		Log.Info(">Built all industry class types ", Log.LVL_INFO);
-		return;
-		}
-	}	// End while loop
+	}
 }
 
 // Special build method for special industries, uses "hard code" methods specific for each type
