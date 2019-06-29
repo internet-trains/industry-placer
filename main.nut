@@ -548,164 +548,114 @@ function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
     local IND = null;
     local IND_DIST = 0;
 
-    // Check if industry is not buildable
-    if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
-        // Display error
-        Log.Error(" ~IndustryConstructor.ClusterBuildMethod: Industry not buildable!", Log.LVL_INFO);
-        return 0;
-    }
 
-    // Assign and moderate map multiplier
-    if(MAP_SCALE > 1) MULTI = 1;
-    else MULTI = MAP_SCALE;
-
-    // Find if node exists already
-    // - Check if node list has entries
-    //Log.Info("Node list length: " + CLUSTERNODE_LIST_IND.len(), Log.LVL_INFO)
-    if (CLUSTERNODE_LIST_IND.len() > 0) {
-        // - Loop through node list
-        for(local i = 0; i < CLUSTERNODE_LIST_IND.len(); i++) {
-            // - If node for industry exists
-            if(CLUSTERNODE_LIST_IND[i] == INDUSTRY_ID) {
-                // - If industry count is less than or equal to global, node tile is that tile
-                if(CLUSTERNODE_LIST_COUNT[i] < GSController.GetSetting("CLUSTER_NODES")) {
-                    // Set node tile
-                    NODE_TILE = CLUSTERTILE_LIST[i];
-                    // Display status msg
-                    //Log.Info("Using existing node: " + GSMap.IsValidTile(NODE_TILE), Log.LVL_INFO)
-                    // Inc list counter
-                    LIST_VALUE = i;
-                    break;
-                }
-            }
+    // Loop until suitable node
+    while(SEARCH_TRIES > 0 && NODEGOT == false) {
+        // Increment and check counter
+        SEARCH_TRIES--
+        if(SEARCH_TRIES == 0) {
+            Log.Error("IndustryConstructor.ClusterBuildMethod: Couldn't find a valid tile to set node on!", Log.LVL_INFO)
+            return 0
         }
-    }
-    // If node tile doesn't exist then get one
-    if(NODE_TILE == null)
-    {
-        //Display status msg
-        //Log.Info("Finding new node", Log.LVL_INFO)
-        local SEARCH_TRIES = ((256 * 256 * 3) * MAP_SCALE);
-        local NODEMATCH = false;
-        local NODEGOT = false;
-        // Loop until suitable node
-        while(SEARCH_TRIES > 0 && NODEGOT == false) {
+        // Get a random tile
+        NODE_TILE = Tile.GetRandomTile();
 
-            // Increment and check counter
-            SEARCH_TRIES--
-            if(SEARCH_TRIES == ((256 * 256 * 2.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Search tries left: " + SEARCH_TRIES, Log.LVL_INFO);
-            if(SEARCH_TRIES == ((256 * 256 * 1.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Search tries left: " + SEARCH_TRIES, Log.LVL_INFO);
-            if(SEARCH_TRIES == ((256 * 256 * 0.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Search tries left: " + SEARCH_TRIES, Log.LVL_INFO);
-            if(SEARCH_TRIES == 0) {
-                Log.Error("IndustryConstructor.ClusterBuildMethod: Couldn't find a valid tile to set node on!", Log.LVL_INFO)
-                return 0
+        // Is buildable
+        if(GSTile.IsBuildable(NODE_TILE) == false) continue;
+
+        // Check abnormal industries
+        // - Oil Refinery
+        if(IND_NAME == "Oil Refinery") {
+            // - Check to rather prospect
+            if(GSController.GetSetting("PROS_BOOL") == 1) {
+                // Try prospect
+                if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
+                else return 0;
             }
-            // Get a random tile
-            NODE_TILE = Tile.GetRandomTile();
-
-            // Is buildable
-            if(GSTile.IsBuildable(NODE_TILE) == false) continue;
-
-            // Check abnormal industries
-            // - Oil Refinery
-            if(IND_NAME == "Oil Refinery") {
+            // - Check oil ind setting, and compare to current tile and re loop if above
+            if(GSGameSettings.IsValid("oil_refinery_limit") == true) if(GSMap.DistanceFromEdge(BORDER_TILE) > GSGameSettings.GetValue("oil_refinery_limit")) continue;
+        }
+        // - Farm
+        if(IND_NAME == "Farm") {
+            // - Check climate
+            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
                 // - Check to rather prospect
                 if(GSController.GetSetting("PROS_BOOL") == 1) {
                     // Try prospect
                     if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
                     else return 0;
                 }
-                // - Check oil ind setting, and compare to current tile and re loop if above
-                if(GSGameSettings.IsValid("oil_refinery_limit") == true) if(GSMap.DistanceFromEdge(BORDER_TILE) > GSGameSettings.GetValue("oil_refinery_limit")) continue;
+                // - Check if tile is snow and re loop if true
+                if(GSTile.GetTerrainType(NODE_TILE) == GSTile.TERRAIN_SNOW) continue;
             }
-            // - Farm
-            if(IND_NAME == "Farm") {
-                // - Check climate
-                if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                    // - Check to rather prospect
-                    if(GSController.GetSetting("PROS_BOOL") == 1) {
-                        // Try prospect
-                        if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                        else return 0;
-                    }
-                    // - Check if tile is snow and re loop if true
-                    if(GSTile.GetTerrainType(NODE_TILE) == GSTile.TERRAIN_SNOW) continue;
-                }
-            }
-            // - Forest
-            if(IND_NAME == "Forest") {
-                // - Check climate
-                if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                    // - Check to rather prospect
-                    if(GSController.GetSetting("PROS_BOOL") == 1) {
-                        // Try prospect
-                        if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                        else return 0;
-                    }
-                    // - Check if tile is not snow and re loop if true
-                    if(GSTile.GetTerrainType(NODE_TILE) != GSTile.TERRAIN_SNOW) continue;
-                }
-            }
-            // - Water Supply
-            if(IND_NAME == "Water Supply") {
-                // - Check climate
-                if(GSGame.GetLandscape () == GSGame.LT_TROPIC) {
-                    // - Check to rather prospect
-                    if(GSController.GetSetting("PROS_BOOL") == 1) {
-                        // Try prospect
-                        if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                        else return 0;
-                    }
-                    // - Check if tile is not desert and re loop if true
-                    if(GSTile.GetTerrainType(NODE_TILE) != GSTile.TERRAIN_DESERT) continue;
-                }
-            }
-
-            // Check dist from edge
-            //if(GSMap.DistanceFromEdge(NODE_TILE) < (GSController.GetSetting("CLUSTER_MIN_EDGE") * MULTI)) continue;
-
-            // Check dist from town
-            local TOWN_DIST = 0;
-            // - Get distance to town
-            TOWN_DIST = GSTown.GetDistanceManhattanToTile(GSTile.GetClosestTown(NODE_TILE),NODE_TILE);
-            // - If less than minimum, re loop
-            if(TOWN_DIST < (GSController.GetSetting("CLUSTER_MIN_TOWN") * MULTI)) continue;
-
-            //Check dist from ind
-            // - Get industry
-            IND = this.GetClosestIndustry(NODE_TILE);
-            // - If not null (null - no indusrties)
-            if(IND != null) {
-                // - Get distance
-                IND_DIST = GSIndustry.GetDistanceManhattanToTile(IND,NODE_TILE);
-                // - If less than minimum, re loop
-                if(IND_DIST < (GSController.GetSetting("CLUSTER_MIN_IND") * MULTI)) continue;
-            }
-
-            // Check dist from other clusters
-            NODEMATCH = false;
-            // - Check if node list has entries
-            if (CLUSTERNODE_LIST_IND.len() > 0) {
-            //    // - Loop through node list
-                for(local i = 0; i < CLUSTERTILE_LIST.len(); i++) {
-            //        // - If below min dist, then set match and end
-                    if(GSTile.GetDistanceManhattanToTile(NODE_TILE,CLUSTERTILE_LIST[i]) < GSController.GetSetting("CLUSTER_MIN_NODE")) {
-                        NODEMATCH = true;
-                        break;
-                    }
-                }
-            }
-            // - Check if match, and continue if true
-            if(NODEMATCH == true) continue;
-        //    Log.Info("node fine", Log.LVL_INFO)
-
-            // Add to node list
-            CLUSTERNODE_LIST_IND.push(INDUSTRY_ID);
-            CLUSTERNODE_LIST_COUNT.push(0);
-            CLUSTERTILE_LIST.push(NODE_TILE);
-            LIST_VALUE = CLUSTERTILE_LIST.len() - 1;
-            NODEGOT = true;
         }
+        // - Forest
+        if(IND_NAME == "Forest") {
+            // - Check climate
+            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
+                // - Check to rather prospect
+                if(GSController.GetSetting("PROS_BOOL") == 1) {
+                    // Try prospect
+                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
+                    else return 0;
+                }
+                // - Check if tile is not snow and re loop if true
+                if(GSTile.GetTerrainType(NODE_TILE) != GSTile.TERRAIN_SNOW) continue;
+            }
+        }
+        // - Water Supply
+        if(IND_NAME == "Water Supply") {
+            // - Check climate
+            if(GSGame.GetLandscape () == GSGame.LT_TROPIC) {
+                // - Check to rather prospect
+                if(GSController.GetSetting("PROS_BOOL") == 1) {
+                    // Try prospect
+                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
+                    else return 0;
+                }
+                // - Check if tile is not desert and re loop if true
+                if(GSTile.GetTerrainType(NODE_TILE) != GSTile.TERRAIN_DESERT) continue;
+            }
+        }
+
+        // Check dist from edge
+
+        // Check dist from town
+
+        //Check dist from ind
+        // - Get industry
+        IND = this.GetClosestIndustry(NODE_TILE);
+        // - If not null (null - no indusrties)
+        if(IND != null) {
+            // - Get distance
+            IND_DIST = GSIndustry.GetDistanceManhattanToTile(IND,NODE_TILE);
+            // - If less than minimum, re loop
+            if(IND_DIST < (GSController.GetSetting("CLUSTER_MIN_IND") * MULTI)) continue;
+        }
+
+        // Check dist from other clusters
+        NODEMATCH = false;
+        // - Check if node list has entries
+        if (CLUSTERNODE_LIST_IND.len() > 0) {
+        //    // - Loop through node list
+            for(local i = 0; i < CLUSTERTILE_LIST.len(); i++) {
+        //        // - If below min dist, then set match and end
+                if(GSTile.GetDistanceManhattanToTile(NODE_TILE,CLUSTERTILE_LIST[i]) < GSController.GetSetting("CLUSTER_MIN_NODE")) {
+                    NODEMATCH = true;
+                    break;
+                }
+            }
+        }
+        // - Check if match, and continue if true
+        if(NODEMATCH == true) continue;
+    //    Log.Info("node fine", Log.LVL_INFO)
+
+        // Add to node list
+        CLUSTERNODE_LIST_IND.push(INDUSTRY_ID);
+        CLUSTERNODE_LIST_COUNT.push(0);
+        CLUSTERTILE_LIST.push(NODE_TILE);
+        LIST_VALUE = CLUSTERTILE_LIST.len() - 1;
+        NODEGOT = true;
     }
     // Get tile to build industry on
     local TILE_ID = null;
@@ -769,17 +719,6 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
     local IND = null;
     local IND_DIST = 0;
     local MULTI = 0;
-
-    // Check if industry is not buildable
-    if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
-        // Display error
-        Log.Error(" ~Industry not buildable!", Log.LVL_INFO);
-        return 0;
-    }
-
-    // Assign and moderate map multiplier
-    if(MAP_SCALE > 1) MULTI = 1;
-    else MULTI = MAP_SCALE;
 
     // Loop until correct tile
     while(BUILD_TRIES > 0) {
@@ -874,144 +813,6 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
     return 0;
 }
 
-// Random build method function (4), return 1 if built and 0 if not
-function IndustryConstructor::RandomBuildMethod(INDUSTRY_ID) {
-
-    local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID); // Industry name string
-    local TILE_ID = null;
-    local BUILD_TRIES = ((256 * 256 * 2) * MAP_SCALE).tointeger();
-
-    //Check if industry is not buildable
-    if(!GSIndustryType.CanBuildIndustry(INDUSTRY_ID)) {
-        // Display error
-        Log.Error(" ~Industry not buildable!", Log.LVL_INFO);
-        return 0;
-    }
-
-    // Loop until correct tile
-    while(BUILD_TRIES > 0) {
-        // Get a random tile
-        TILE_ID = Tile.GetRandomTile();
-
-        // Check abnormal industries
-        // - Oil Refinery
-        if(IND_NAME == "Oil Refinery") {
-            // - Check to rather prospect
-            if(GSController.GetSetting("PROS_BOOL") == 1) {
-                // Try prospect
-                if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                else return 0;
-            }
-            // - Check oil ind setting, and compare to current tile and re loop if above
-                if(GSGameSettings.IsValid("oil_refinery_limit") == true) if(GSMap.DistanceFromEdge(TILE_ID) > GSGameSettings.GetValue("oil_refinery_limit")) continue;
-        }
-        // - Farm
-        if(IND_NAME == "Farm") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is snow and re loop if true
-                if(GSTile.GetTerrainType(TILE_ID) == GSTile.TERRAIN_SNOW) continue;
-            }
-        }
-        // - Forest
-        if(IND_NAME == "Forest") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is not snow and re loop if true
-                if(GSTile.GetTerrainType(TILE_ID) != GSTile.TERRAIN_SNOW) continue;
-            }
-        }
-        // - Water Supply
-        if(IND_NAME == "Water Supply") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_TROPIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is not desert and re loop if true
-                if(GSTile.GetTerrainType(TILE_ID) != GSTile.TERRAIN_DESERT) continue;
-            }
-        }
-
-        // Try build
-        if (GSIndustryType.BuildIndustry(INDUSTRY_ID, TILE_ID) == true) return 1;
-
-        // Increment and check counter
-        BUILD_TRIES--
-        if(BUILD_TRIES == ((256 * 256 * 1.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == ((256 * 256 * 1.0) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == ((256 * 256 * 0.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == 0) {
-            Log.Error("IndustryConstructor.RandomBuildMethod: Couldn't find a valid tile!", Log.LVL_INFO);
-        }
-    }
-    Log.Error("IndustryConstructor.RandomBuildMethod: Build failed!", Log.LVL_INFO);
-    return 0;
-}
-
-// NOTE: Has to be called from the HandleEvents of main.
-function IndustryConstructor::HandleEvents() {
-    // Check GS continue
-    if(CONTINUE_GS == false) {
-        return;
-    }
-
-    // Display status msg
-    Log.Info("+==============================+", Log.LVL_INFO);
-    Log.Info("Event handling...", Log.LVL_INFO);
-
-    // While events are waiting
-    while (GSEventController.IsEventWaiting()) {
-        // Next event in variable
-        local NEXT_EVENT = GSEventController.GetNextEvent();
-        switch (NEXT_EVENT.GetEventType()) {
-            // Event: New industry
-            case GSEvent.ET_INDUSTRY_OPEN:
-            // Display status msg
-            Log.Info(">New industry opened event", Log.LVL_SUB_DECISIONS);
-            // Convert the event
-            local EVENT_CONTROLER = GSEventIndustryOpen.Convert(NEXT_EVENT);
-            // Get the industry ID
-            local INDUSTRY_ID  = EVENT_CONTROLER.GetIndustryID();
-            // Get the tile of the industry
-            local TILE_ID = GSIndustry.GetLocation(INDUSTRY_ID);
-            // Demolish the industry
-            GSTile.DemolishTile(TILE_ID);
-            break;
-            // Event: Industry
-            case GSEvent.ET_INDUSTRY_CLOSE:
-            // Display status msg
-            Log.Info(">Industry closed event", Log.LVL_SUB_DECISIONS)
-            // Convert the event
-            local EVENT_CONTROLER = GSEventIndustryClose.Convert(NEXT_EVENT);
-            // Get the industry ID
-            local INDUSTRY_ID  = EVENT_CONTROLER.GetIndustryID();
-            // Do nothing, as reduced number of industries will be handeled in the next refresh loop
-            break;
-            // Unhandled events
-            default:
-            // Display status msg
-            //Log.Info(">Unhandled event", Log.LVL_INFO)
-            break;
-        }
-    }
-}
-
 // Custom get closest industry function
 function IndustryConstructor::GetClosestIndustry(TILE) {
     // Create a list of all industries
@@ -1028,105 +829,6 @@ function IndustryConstructor::GetClosestIndustry(TILE) {
 
     // Return the top one
     return IND_LIST.Begin();
-}
-
-// Town house list function, returns a list of tiles with houses on from a town
-function IndustryConstructor:: GetTownHouseList(TOWN_ID, CARGO_ID) {
-    // Below requires
-    //    TOWN_ID // ID of town
-    //    CARGO_PAXID    //    Passenger cargo ID
-
-    // Configure variables
-    local HOUSE_COUNT_FACTOR = 1.25; // Account for multi tile buildings
-    local MAX_TRIES = (128 * 128); // Maximum size for search, to prevent infinite loop
-
-    // Create a blank tile list
-    local TOWN_HOUSE_LIST = GSTileList();
-    local TOWN_HOUSE_LIST_COUNT = 0;
-
-    // Create a cargo counter
-    local CARGO_COUNTER = 0;
-    //GSLog.Info(GSCargo.GetCargoLabel(CARGO_PAXID));
-
-    // Get town house count
-    local TOWN_HOUSE_COUNT = GSTown.GetHouseCount(TOWN_ID);
-
-    // Set current tile
-    local CURRENT_TILE = GSTown.GetLocation(TOWN_ID);
-
-    //GSLog.Info(TOWN_ID);
-    //GSLog.Info("===");
-    //GSLog.Info(GSTile.IsWithinTownInfluence(CURRENT_TILE,TOWN_ID));
-    //GSLog.Info(GSTile.GetTownAuthority(CURRENT_TILE)); //= TOWN_ID
-    //GSLog.Info(GSTile.IsBuildable(CURRENT_TILE)); //=false
-    //GSLog.Info(GSTile.GetOwner(CURRENT_TILE)); //=-1
-    //GSLog.Info(GSTile.IsStationTile(CURRENT_TILE)); //=false
-    //GSLog.Info(GSTile.GetCargoAcceptance(CURRENT_TILE, CARGO_PAXID,1,1,0)); //=0
-
-    // Create spiral walker
-    local SPIRAL_WALKER = SpiralWalker();
-    // Set spiral walker on town center tile, always a road
-    SPIRAL_WALKER.Start(CURRENT_TILE);
-
-    // Create try counter
-    local TRIES = 0;
-
-    // Loop till list count matches house count
-    while(TOWN_HOUSE_LIST_COUNT < (TOWN_HOUSE_COUNT * HOUSE_COUNT_FACTOR) && TRIES < MAX_TRIES) {
-        // Inc tries
-        TRIES++;
-
-        // Walk one tile
-        SPIRAL_WALKER.Walk();
-        // Get tile
-        CURRENT_TILE = SPIRAL_WALKER.GetTile();
-
-        // Debug sign
-        if(GSGameSettings.GetValue("log_level") >= 4)GSSign.BuildSign(CURRENT_TILE,"" + TRIES);
-
-        // Debug msgs
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("---" + TRIES + "---");
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("In current town inf: " + GSTile.IsWithinTownInfluence(CURRENT_TILE,TOWN_ID));
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("Town authority id: " + GSTile.GetTownAuthority(CURRENT_TILE));
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("Buildable: " + GSTile.IsBuildable(CURRENT_TILE));
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("Owner id: " + GSTile.GetOwner(CURRENT_TILE));
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("Station: " + GSTile.IsStationTile(CURRENT_TILE));
-        if(GSGameSettings.GetValue("log_level") >= 4) GSLog.Info("Passenger acceptance: " + GSTile.GetCargoAcceptance(CURRENT_TILE, CARGO_PAXID,1,1,0));
-
-        // If not the current town, continue
-        if(GSGameSettings.GetValue("log_level") >= 4) if(GSTile.IsWithinTownInfluence(CURRENT_TILE,TOWN_ID) == false);
-        // If not a ??? (non town center buildings are always 65535)
-        if(GSTile.GetTownAuthority(CURRENT_TILE) != TOWN_ID) continue;
-        // If buildable, continue
-        if(GSTile.IsBuildable(CURRENT_TILE) != false) continue;
-        // If owned by anyone, continue
-        if(GSTile.GetOwner(CURRENT_TILE) != -1) continue;
-        // If station, continue
-        //if(GSTile.IsStationTile(CURRENT_TILE) != false) continue;
-        // If industry, continue
-        if(IsIndustry(CURRENT_TILE) != false) continue;
-
-        // Get passenger acceptance
-        CARGO_COUNTER = GSTile.GetCargoAcceptance(CURRENT_TILE, CARGO_PAXID,1,1,0);
-
-        // If the current tile accepts passengers
-        if(GSTile.GetCargoAcceptance(CURRENT_TILE, CARGO_PAXID,1,1,0) > 0) {
-            // Add the tile
-            TOWN_HOUSE_LIST.AddTile(CURRENT_TILE);
-
-            // Inc counter
-            TOWN_HOUSE_LIST_COUNT++;
-
-            // Debug sign
-            if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(CURRENT_TILE,"H: " + TOWN_HOUSE_LIST_COUNT);
-            }
-    }
-
-    // Display status msg
-    //GSLog.Info("Created list of " + TOWN_HOUSE_LIST.Count() + " of " + TOWN_HOUSE_COUNT + " houses in town " + GSTown.GetName(TOWN_ID));
-
-    // Return the list
-    return TOWN_HOUSE_LIST;
 }
 
 // Min/Max X/Y list function, returns a 4 tile list with X Max, X Min, Y Max, Y Min, or blank list on fail.
@@ -1211,72 +913,6 @@ function IndustryConstructor:: ListMinMaxXY(TILE_LIST, TWO_TILE_BOOL) {
     else GSLog.Error("IndustryConstructor.ListMinMaxXY: List is Empty!");
 
     return LOCAL_LIST;
-}
-
-// Error handler function
-function IndustryConstructor:: ErrorHandler() {
-    // Get error
-    local ERROR = GSError.GetLastError();
-
-    // Check if error is not nothing
-    if (ERROR == GSError.ERR_NONE) return;
-
-    // Error category
-        switch(GSError.GetErrorCategory()) {
-    case GSError.ERR_CAT_NONE:
-        GSLog.Error("Error not related to any category.")
-        break;
-    case GSError.ERR_CAT_GENERAL:
-        GSLog.Error("Error related to general things.")
-        break;
-    case GSError.ERR_CAT_VEHICLE:
-        GSLog.Error("Error related to building / maintaining vehicles.")
-        break;
-    case GSError.ERR_CAT_STATION:
-        GSLog.Error("Error related to building / maintaining stations.")
-        break;
-    case GSError.ERR_CAT_BRIDGE:
-        GSLog.Error("Error related to building / removing bridges.")
-        reak;
-    case GSError.ERR_CAT_TUNNEL:
-        GSLog.Error("Error related to building / removing tunnels.")
-        break;
-    case GSError.ERR_CAT_TILE:
-        GSLog.Error("Error related to raising / lowering and demolishing tiles.")
-        break;
-    case GSError.ERR_CAT_SIGN:
-        GSLog.Error("Error related to building / removing signs.")
-        break;
-    case GSError.ERR_CAT_RAIL:
-        GSLog.Error("Error related to building / maintaining rails.")
-        break;
-    case GSError.ERR_CAT_ROAD:
-        GSLog.Error("Error related to building / maintaining roads.")
-        break;
-    case GSError.ERR_CAT_ORDER:
-        GSLog.Error("Error related to managing orders.")
-        break;
-    case GSError.ERR_CAT_MARINE:
-        GSLog.Error("Error related to building / removing ships, docks and channels.")
-        break;
-    case GSError.ERR_CAT_WAYPOINT:
-        GSLog.Error("Error related to building / maintaining waypoints.")
-        break;
-        default:
-    GSLog.Error("Unhandled error category!" + GSError.GetErrorCategory());
-    break;
-        }
-
-    // Errors
-        switch(ERROR) {
-        case GSSign.ERR_SIGN_TOO_MANY_SIGNS:
-        GSLog.Error("Too many signs!");
-        break;
-
-        default:
-    GSLog.Error("Unhandled error: " + GSError.GetLastErrorString());
-    break;
-    }
 }
 
 // Function to check if tile is industry, returns true or false
