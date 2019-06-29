@@ -541,7 +541,7 @@ function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
 function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
 
     // Variables
-    local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID)            // Industry name string
+    local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID);            // Industry name string
     local LIST_VALUE = 0; // The point on the list surrently, to synchronise between lists
     local NODE_TILE = null;
     local MULTI = 0;
