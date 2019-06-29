@@ -61,7 +61,6 @@ class IndustryConstructor extends GSController {
     PRIMARY_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for primary industries.
     SECONDARY_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for secondary industries.
     TERTIARY_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for tertiary industries.
-    SPECIAL_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for special industries.
     BUILD_SPEED = 0; // Global build speed variable
 
     CLUSTERNODE_LIST_IND = []; // Sub-array of industry types, for cluster builder
@@ -84,9 +83,6 @@ class IndustryConstructor extends GSController {
     PROCINDUSTRY_LIST_COUNT = 0; // Count of secondary industries, set in IndustryConstructor.Init.
     TERTIARYINDUSTRY_LIST = []; // Array of tertiary industry type ID's, set in IndustryConstructor.Init.
     TERTIARYINDUSTRY_LIST_COUNT = 0; // Count of tertiary industries, set in IndustryConstructor.Init.
-    SPECIALINDUSTRY_LIST = []; // Array of special industry type ID's, set in IndustryConstructor.Init.
-    SPECIALINDUSTRY_LIST_COUNT = 0; // Count of special industries, set in IndustryConstructor.Init.
-    SPECIALINDUSTRY_TYPES = ["Bank", "Oil Rig", "Water Tower", "Lumber Mill"];
 
     // User variables
     DENSITY_IND_TOTAL = 0; // Set from settings, in IndustryConstructor.Init. Total industries, integer always >= 1
@@ -95,7 +91,6 @@ class IndustryConstructor extends GSController {
     DENSITY_RAW_PROP = 0; // Set from settings, in IndustryConstructor.Init. Primary industry proportion, float always < 1.
     DENSITY_PROC_PROP = 0; // Set from settings, in IndustryConstructor.Init. Secondary industry proportion, float always < 1.
     DENSITY_TERT_PROP = 0; // Set from settings, in IndustryConstructor.Init. Tertiary industry proportion, float always < 1.
-    DENSITY_SPEC_PROP = 0; // Set from settings, in IndustryConstructor.Init. Special industry proportion, float always < 1.
     DENSITY_RAW_METHOD = 0; // Set from settings, in IndustryConstructor.Init.
     DENSITY_PROC_METHOD = 0; // Set from settings, in IndustryConstructor.Init.
     DENSITY_TERT_METHOD = 0; // Set from settings, in IndustryConstructor.Init.
@@ -111,7 +106,6 @@ class IndustryConstructor extends GSController {
         PRIMARY_PERFORMED = false;
         SECONDARY_PERFORMED = false;
         TERTIARY_PERFORMED = false;
-        SPECIAL_PERFORMED = false;
 
         // Create a new industry type list
         IND_TYPE_LIST = GSIndustryTypeList();
@@ -132,7 +126,6 @@ function IndustryConstructor::Save() {
         SV_RAW = RAWINDUSTRY_LIST,
         SV_PROC = PROCINDUSTRY_LIST,
         SV_TERT = TERTIARYINDUSTRY_LIST,
-        SV_SPECIAL = SPECIALINDUSTRY_LIST,
         SV_CLUSTERNODE_IND = CLUSTERNODE_LIST_IND,
         SV_CLUSTERNODE_COUNT = CLUSTERNODE_LIST_COUNT,
         SV_CLUSTERTILES = CLUSTERTILE_LIST,
@@ -158,7 +151,6 @@ function IndustryConstructor::Load(SV_VERSION, SV_TABLE) {
         if(SV_KEY == "SV_RAW") RAWINDUSTRY_LIST = SV_VAL;
         if(SV_KEY == "SV_PROC") PROCINDUSTRY_LIST = SV_VAL;
         if(SV_KEY == "SV_TERT") TERTIARYINDUSTRY_LIST = SV_VAL;
-        if(SV_KEY == "SV_SPECIAL") SPECIALINDUSTRY_LIST = SV_VAL;
         if(SV_KEY == "SV_CLUSTERNODE_IND") CLUSTERNODE_LIST_IND = SV_VAL;
         if(SV_KEY == "SV_CLUSTERNODE_COUNT") CLUSTERNODE_LIST_COUNT = SV_VAL;
         if(SV_KEY == "SV_CLUSTERTILES") CLUSTERTILE_LIST = SV_VAL;
@@ -219,29 +211,6 @@ function IndustryConstructor::Init() {
         // Get current ID name
         IND_NAME = GSIndustryType.GetName(IND_ID);
 
-        // Loop through special list
-        foreach(SPECIAL_NAME in SPECIALINDUSTRY_TYPES) {
-            // If current ID name is a special = SPECIALINDUSTRY_LIST
-            if(IND_NAME == SPECIAL_NAME) {
-                // Display industry type name msg
-                Log.Info(" ~Special Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
-
-                // Add industry id to raw list
-                SPECIALINDUSTRY_LIST.push(IND_ID);
-
-                // Assign true and end loop
-                IS_SPECIAL = true;
-                break;
-            }
-        }
-
-        // If the current ID was special
-        if(IS_SPECIAL == true) {
-            // Reset and jump to next id
-            IS_SPECIAL = false;
-            continue;
-        }
-
         // If current ID is a raw producer = RAWINDUSTRY_LIST
         if (GSIndustryType.IsRawIndustry(IND_ID)) {
             // Display industry type name msg
@@ -280,8 +249,6 @@ function IndustryConstructor::Init() {
         if(PROCINDUSTRY_LIST_COUNT < 1) PROC_PROP = 0;
     local TERT_COUNT = GSController.GetSetting("TERT_COUNT").tofloat();
         if(TERTIARYINDUSTRY_LIST_COUNT < 1) TERT_PROP = 0;
-    local SPEC_COUNT = GSController.GetSetting("SPEC_COUNT").tofloat();
-        if(SPECIALINDUSTRY_LIST_COUNT < 1) SPEC_PROP = 0;
 
     // Preprocess map
     this.eligible_towns = this.BuildEligibleTowns();
@@ -314,88 +281,12 @@ function IndustryConstructor::BuildIndustry() {
                     // Increment count using scatter build
                     CURRENT_BUILD_COUNT += ScatteredBuildMethod(CURRENT_IND_ID);
                     break;
-                case 4:
-                    // Increment count using special build
-                    CURRENT_BUILD_COUNT += SpecialBuildMethod(CURRENT_IND_ID);
-                    break;
             this.ErrorHandler();
             }
             // Display status
             Log.Info(" ~Built " + CURRENT_BUILD_COUNT + " / " + BUILD_TARGET, Log.LVL_SUB_DECISIONS);
         }
     }
-}
-
-// Special build method for special industries, uses "hard code" methods specific for each type
-// return 1 if built and 0 if not
-function IndustryConstructor::SpecialBuildMethod(INDUSTRY_ID) {
-    // Switch ind id for each type, must be same as in SPECIALINDUSTRY_TYPES
-    switch(GSIndustryType.GetName(INDUSTRY_ID)) {
-        case SPECIALINDUSTRY_TYPES[0]:            // "Bank"
-            // Check towns with pop > parameter
-            // - Create town list
-            local LOCAL_TOWN_LIST = GSTownList();
-            // - Valuate by population
-            LOCAL_TOWN_LIST.Valuate(GSTown.GetPopulation);
-            // - Remove below parameter
-            LOCAL_TOWN_LIST.RemoveBelowValue(GSController.GetSetting("SPEC_BANK_MINPOP"));
-
-            // Check if valid
-            if(LOCAL_TOWN_LIST.IsEmpty() == true) {
-                Log.Warning(" ~IndustryConstructor.SpecialBuildMethod: No towns with more than " + GSController.GetSetting("SPEC_BANK_MINPOP") + " for Banks!", Log.LVL_SUB_DECISIONS);
-                return 0;
-            }
-            // Try prospect
-            if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-            break;
-        case SPECIALINDUSTRY_TYPES[1]:            // "Oil Rig"
-            // Check if current date is before param
-            if(GSDate.GetCurrentDate() < GSDate.GetDate(GSController.GetSetting("SPEC_RIG_MINYEAR"), 1, 1)) {
-                Log.Warning(" ~IndustryConstructor.SpecialBuildMethod: Year is less than " + GSController.GetSetting("SPEC_RIG_MINYEAR") + " for Oil Rig!", Log.LVL_SUB_DECISIONS);
-                return 0;
-            }
-            // Try prospect
-            if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-            break;
-        case SPECIALINDUSTRY_TYPES[2]:            // "Water Tower"
-            // Check towns with pop > parameter
-            // - Create town list
-            local LOCAL_TOWN_LIST = GSTownList();
-            // - Valuate by population
-            LOCAL_TOWN_LIST.Valuate(GSTown.GetPopulation);
-            // - Remove below parameter
-            LOCAL_TOWN_LIST.RemoveBelowValue(GSController.GetSetting("SPEC_WTR_MINPOP"));
-
-            // Check if valid
-            if(LOCAL_TOWN_LIST.IsEmpty() == true) {
-                Log.Warning(" ~IndustryConstructor.SpecialBuildMethod: No towns with more than " + GSController.GetSetting("SPEC_WTR_MINPOP") + " for Water Towers!", Log.LVL_SUB_DECISIONS);
-                return 0;
-            }
-            // Try prospect
-            if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-            break;
-        case SPECIALINDUSTRY_TYPES[3]:            // "Lumber Mill"
-            // Check if must not build param
-            if(GSController.GetSetting("SPEC_LBR_BOOL") == 0) return 0;
-            // Try prospect
-            if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-            break;
-        default:
-            // Display error
-            Log.Error(" ~IndustryConstructor.SpecialBuildMethod: Industry " + GSIndustryType.GetName(INDUSTRY_ID) + " not supported!", Log.LVL_INFO);
-    }
-    return 0;
-}
-
-// Helper function
-// Given a tile, returns true if the nearest industry is further away than
-// TOWN_MIN_IND as defined in config (minimum spacing between town and industry)
-function IndustryConstructor::FarFromIndustry(tile_id) {
-    if(this.GetClosestIndustry(tile_id) == null) {
-        return 1; // null case - no industries on map
-    }
-    local ind_distance = GSIndustry.GetDistanceManhattanToTile(this.GetClosestIndustry(tile_id), tile_id);
-    return ind_distance > (GSController.GetSetting("TOWN_MIN_IND") * MULTI);
 }
 
 // Map preprocess
@@ -436,52 +327,6 @@ function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
 
     local ind_name = GSIndustryType.GetName(INDUSTRY_ID);
 
-    // Check abnormal industries, for towns
-    // - Oil Refinery
-    if(IND_NAME == "Oil Refinery") {
-        // - Check to rather prospect
-        if(GSController.GetSetting("PROS_BOOL") == 1) {
-            // Try prospect
-            if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-            else return 0;
-        }
-        // - Check oil ind setting, and remove towns further from edge
-        //   Mainly for speed purposes...
-        if(GSGameSettings.IsValid("oil_refinery_limit") == true) {
-            // Valuate by edge distance
-            eligible_towns.Valuate(GetTownDistFromEdge);
-            // Remove towns farther than max, including town radius
-            local MAX_DIST = GSGameSettings.GetValue("oil_refinery_limit") + (GSController.GetSetting("TOWN_MAX_RADIUS") - 2)
-            if(MAX_DIST < 0) MAX_DIST = 0;
-            eligible_towns.RemoveAboveValue(MAX_DIST);
-        }
-    }
-    // - Farm
-    if(IND_NAME == "Farm") {
-        // - Check climate
-        local ISCLIMATE_ARCTIC = (GSGame.GetLandscape () == GSGame.LT_ARCTIC);
-        if(ISCLIMATE_ARCTIC == true) {
-            // - Check to rather prospect
-            if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSTRY_ID) ? 1 : 0; } // Try prospect
-        }
-    }
-    // - Forest
-    if(IND_NAME == "Forest") {
-        // - Check climate
-        if(ISCLIMATE_ARCTIC == true) {
-            // - Check to rather prospect
-            if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSTRY_ID) ? 1 : 0; } // Try prospect
-        }
-    }
-    // - Water Supply
-    if(IND_NAME == "Water Supply") {
-        // - Check climate
-        local ISCLIMATE_TROPIC = (GSGame.GetLandscape () == GSGame.LT_TROPIC);
-        if(ISCLIMATE_TROPIC == true) {
-            // - Check to rather prospect
-            if(GSController.GetSetting("PROS_BOOL") == 1) { return GSIndustryType.ProspectIndustry(INDUSTRY_ID) ? 1 : 0; } // Try prospect
-        }
-    }
 
     // Check if the list is not empty
     if(eligible_towns.IsEmpty() == true) {
@@ -494,29 +339,6 @@ function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
     Log.Info("   ~Trying to build in " + GSTown.GetName(town_id), Log.LVL_DEBUG);
     local eligible_tiles = this.GetEligibleTownTiles(town_id);
 
-            // Check abnormal industries
-            local TILE_TERRAIN = GSTile.GetTerrainType(BORDER_TILE);
-            // - Oil Refinery
-            if(IND_NAME == "Oil Refinery") {
-                // - Check oil ind setting, and compare to current tile and re loop if above
-                if(GSGameSettings.IsValid("oil_refinery_limit") == true) if(GSMap.DistanceFromEdge(BORDER_TILE) > GSGameSettings.GetValue("oil_refinery_limit")) continue;
-            }
-            // - Farm
-            if(IND_NAME == "Farm") {
-                // - Check climate
-                if(ISCLIMATE_ARCTIC == true) {
-                    // - Check if tile is snow and re loop if true
-                    if(TILE_TERRAIN == GSTile.TERRAIN_SNOW) continue;
-                }
-            }
-            // - Forest
-            if(IND_NAME == "Forest") {
-                // - Check climate
-                if(ISCLIMATE_ARCTIC == true) {
-                    // - Check if tile is not snow and re loop if true
-                    if(TILE_TERRAIN != GSTile.TERRAIN_SNOW) continue;
-                }
-            }
     // For each tile in the town tile list, try to build in one of them randomly
     // - Maintain spacing as given by config file
     // - Once built, remove the tile ID from the global eligible tile list
@@ -563,60 +385,6 @@ function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
         // Is buildable
         if(GSTile.IsBuildable(NODE_TILE) == false) continue;
 
-        // Check abnormal industries
-        // - Oil Refinery
-        if(IND_NAME == "Oil Refinery") {
-            // - Check to rather prospect
-            if(GSController.GetSetting("PROS_BOOL") == 1) {
-                // Try prospect
-                if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                else return 0;
-            }
-            // - Check oil ind setting, and compare to current tile and re loop if above
-            if(GSGameSettings.IsValid("oil_refinery_limit") == true) if(GSMap.DistanceFromEdge(BORDER_TILE) > GSGameSettings.GetValue("oil_refinery_limit")) continue;
-        }
-        // - Farm
-        if(IND_NAME == "Farm") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is snow and re loop if true
-                if(GSTile.GetTerrainType(NODE_TILE) == GSTile.TERRAIN_SNOW) continue;
-            }
-        }
-        // - Forest
-        if(IND_NAME == "Forest") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is not snow and re loop if true
-                if(GSTile.GetTerrainType(NODE_TILE) != GSTile.TERRAIN_SNOW) continue;
-            }
-        }
-        // - Water Supply
-        if(IND_NAME == "Water Supply") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_TROPIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is not desert and re loop if true
-                if(GSTile.GetTerrainType(NODE_TILE) != GSTile.TERRAIN_DESERT) continue;
-            }
-        }
 
         // Check dist from edge
 
@@ -725,61 +493,6 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
         // Get a random tile
         TILE_ID = Tile.GetRandomTile();
 
-        // Check abnormal industries
-        // - Oil Refinery
-        if(IND_NAME == "Oil Refinery") {
-            // - Check to rather prospect
-            if(GSController.GetSetting("PROS_BOOL") == 1) {
-                // Try prospect
-                if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                else return 0;
-            }
-            // - Check oil ind setting, and compare to current tile and re loop if above
-                if(GSGameSettings.IsValid("oil_refinery_limit") == true) if(GSMap.DistanceFromEdge(BORDER_TILE) > GSGameSettings.GetValue("oil_refinery_limit")) continue;
-        }
-        // - Farm
-        if(IND_NAME == "Farm") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is snow and re loop if true
-                if(GSTile.GetTerrainType(TILE_ID) == GSTile.TERRAIN_SNOW) continue;
-            }
-        }
-        // - Forest
-        if(IND_NAME == "Forest") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_ARCTIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is not snow and re loop if true
-                if(GSTile.GetTerrainType(TILE_ID) != GSTile.TERRAIN_SNOW) continue;
-            }
-        }
-        // - Water Supply
-        if(IND_NAME == "Water Supply") {
-            // - Check climate
-            if(GSGame.GetLandscape () == GSGame.LT_TROPIC) {
-                // - Check to rather prospect
-                if(GSController.GetSetting("PROS_BOOL") == 1) {
-                    // Try prospect
-                    if(GSIndustryType.ProspectIndustry (INDUSTRY_ID) == true) return 1;
-                    else return 0;
-                }
-                // - Check if tile is not desert and re loop if true
-                if(GSTile.GetTerrainType(TILE_ID) != GSTile.TERRAIN_DESERT) continue;
-            }
-        }
-
         // Check dist from town
         // - Get distance to town
         TOWN_DIST = GSTown.GetDistanceManhattanToTile(GSTile.GetClosestTown(TILE_ID),TILE_ID);
@@ -812,6 +525,10 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
     Log.Error("IndustryConstructor.ScatteredBuildMethod: Build failed!", Log.LVL_INFO)
     return 0;
 }
+
+/*
+Helper functions
+ */
 
 // Custom get closest industry function
 function IndustryConstructor::GetClosestIndustry(TILE) {
@@ -875,9 +592,20 @@ function IndustryConstructor::ListMinMaxXY(tile_list, two_tile) {
 }
 
 // Function to check if tile is industry, returns true or false
-function IsIndustry(TILE_ID) {return (GSIndustry.GetIndustryID(TILE_ID) != 65535); }
+function IsIndustry(tile_id) {return (GSIndustry.GetIndustryID(tile_id) != 65535);}
 
 // Function to valuate town by dist from edge
-function GetTownDistFromEdge(TOWN_ID) {
-    return GSMap.DistanceFromEdge(GSTown.GetLocation(TOWN_ID));
+function GetTownDistFromEdge(town_id) {
+    return GSMap.DistanceFromEdge(GSTown.GetLocation(town_id));
+}
+
+// Helper function
+// Given a tile, returns true if the nearest industry is further away than
+// TOWN_MIN_IND as defined in config (minimum spacing between town and industry)
+function IndustryConstructor::FarFromIndustry(tile_id) {
+    if(this.GetClosestIndustry(tile_id) == null) {
+        return 1; // null case - no industries on map
+    }
+    local ind_distance = GSIndustry.GetDistanceManhattanToTile(this.GetClosestIndustry(tile_id), tile_id);
+    return ind_distance > (GSController.GetSetting("TOWN_MIN_IND") * MULTI);
 }
