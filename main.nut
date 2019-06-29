@@ -833,86 +833,45 @@ function IndustryConstructor::GetClosestIndustry(TILE) {
 
 // Min/Max X/Y list function, returns a 4 tile list with X Max, X Min, Y Max, Y Min, or blank list on fail.
 // If second param is == true, returns a 2 tile list with XY Min and XY Max, or blank list on fail.
-function IndustryConstructor:: ListMinMaxXY(TILE_LIST, TWO_TILE_BOOL) {
+function IndustryConstructor::ListMinMaxXY(tile_list, two_tile) {
+    // Squirrel is pass-by-reference
+    local local_list = GSList();
+    local_list.AddList(tile_list);
+    local_list.Valuate(GSMap.IsValidTile);
+    local_list.KeepValue(1);
 
-    local LOCAL_LIST = GSList();
-
-    local X_MAX_TILE = -1;
-    local X_MIN_TILE = -1;
-    local Y_MAX_TILE = -1;
-    local Y_MIN_TILE = -1;
-
-    // Add list
-    LOCAL_LIST.AddList(TILE_LIST);
-
-    // Remove invalid tiles
-    LOCAL_LIST.Valuate(GSMap.IsValidTile);
-    LOCAL_LIST.KeepValue(1);
-
-    // If list is not empty
-    if(!LOCAL_LIST.IsEmpty()) {
-        // Valuate by x coord
-        LOCAL_LIST.Valuate(GSMap.GetTileX);
-        // Sort from highest to lowest
-        LOCAL_LIST.Sort(GSList.SORT_BY_VALUE, false);
-        // Assign highest
-        X_MAX_TILE = LOCAL_LIST.Begin();
-        // Sort from lowest to highest
-        LOCAL_LIST.Sort(GSList.SORT_BY_VALUE, true);
-        // Assign lowest
-        X_MIN_TILE = LOCAL_LIST.Begin();
-        // Valuate by y coord
-        LOCAL_LIST.Valuate(GSMap.GetTileY);
-        // Sort from highest to lowest
-        LOCAL_LIST.Sort(GSList.SORT_BY_VALUE, false);
-        Y_MAX_TILE = LOCAL_LIST.Begin();
-        // Sort from lowest to highest
-        LOCAL_LIST.Sort(GSList.SORT_BY_VALUE, true);
-        // Assign lowest
-        Y_MIN_TILE = LOCAL_LIST.Begin();
-
-        // Debug sign
-        if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(X_MAX_TILE,"X Max tile");
-        if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(X_MIN_TILE,"X Min tile");
-        if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(Y_MAX_TILE,"Y Max tile");
-        if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(Y_MIN_TILE,"Y Min tile");
-
-        // Debug msgs
-        //GSLog.Info("X Max: " + X_MAX + " X Min: " + X_MIN + " Y Max: " + Y_MAX + " Y Min: ");
-
-        //Create tile list
-        local OUTPUT_TILE_LIST = GSTileList();
-
-        if(TWO_TILE_BOOL == true) {
-            // Get 2 max and min tiles
-            local X_MIN = GSMap.GetTileX(X_MIN_TILE);
-            local X_MAX = GSMap.GetTileX(X_MAX_TILE);
-            local Y_MIN = GSMap.GetTileY(Y_MIN_TILE);
-            local Y_MAX = GSMap.GetTileY(Y_MAX_TILE);
-
-            local XY_MIN_TILE = GSMap.GetTileIndex(X_MIN, Y_MIN);
-            local XY_MAX_TILE = GSMap.GetTileIndex(X_MAX, Y_MAX);
-
-            //GSLog.Info(GSMap.IsValidTile(XY_MIN_TILE) + " " + GSMap.IsValidTile(XY_MAX_TILE));
-
-            // Add tiles
-            OUTPUT_TILE_LIST.AddTile(XY_MIN_TILE);
-            OUTPUT_TILE_LIST.AddTile(XY_MAX_TILE);
-        }
-        else{
-            // Add tiles
-            OUTPUT_TILE_LIST.AddTile(X_MAX_TILE);
-            OUTPUT_TILE_LIST.AddTile(X_MIN_TILE);
-            OUTPUT_TILE_LIST.AddTile(Y_MAX_TILE);
-            OUTPUT_TILE_LIST.AddTile(Y_MIN_TILE);
-        }
-
-        return OUTPUT_TILE_LIST;
-
+    if local_list.IsEmpty() {
+        return null;
     }
-    else GSLog.Error("IndustryConstructor.ListMinMaxXY: List is Empty!");
 
-    return LOCAL_LIST;
+    local_list.Valuate(GSMap.GetTileX);
+    local_list.Sort(GSList.SORT_BY_VALUE, false);
+    x_max_tile = local_list.Begin();
+    local_list.Sort(GSList.SORT_BY_VALUE, true);
+    x_min_tile = local_list.Begin();
+
+    local_list.Valuate(GSMap.GetTileY);
+    local_list.Sort(GSList.SORT_BY_VALUE, false);
+    y_max_tile = local_list.Begin();
+    local_list.Sort(GSList.SORT_BY_VALUE, true);
+    y_min_tile = local_list.Begin();
+
+    local output_tile_list = GSTileList();
+
+    if(two_tile) {
+        local x_min = GSMap.GetTileX(x_min_tile);
+        local x_max = GSMap.GetTileX(x_max_tile);
+        local y_min = GSMap.GetTileY(y_min_tile);
+        local y_max = GSMap.GetTileY(y_max_tile);
+        output_tile_list.AddTile(GSMap.GetTileIndex(x_min, y_min));
+        output_tile_list.AddTile(GSMap.GetTileIndex(x_max, y_max));
+    } else {
+        output_tile_list.AddTile(x_max_tile);
+        output_tile_list.AddTile(x_min_tile);
+        output_tile_list.AddTile(y_max_tile);
+        output_tile_list.AddTile(y_min_tile);
+    }
+    return output_tile_list;
 }
 
 // Function to check if tile is industry, returns true or false
