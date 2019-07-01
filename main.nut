@@ -31,16 +31,18 @@
 
 
 
-// Imports
+// Imports - wtf does this do
 import("util.superlib", "SuperLib", 36);
-Result        <- SuperLib.Result;
-Log        <- SuperLib.Log;
-Helper        <- SuperLib.Helper;
-ScoreList    <- SuperLib.ScoreList;
-Tile        <- SuperLib.Tile;
-Direction    <- SuperLib.Direction;
-Town        <- SuperLib.Town;
-Industry    <- SuperLib.Industry;
+Result <- SuperLib.Result;
+Log <- SuperLib.Log;
+Helper <- SuperLib.Helper;
+ScoreList <- SuperLib.ScoreList;
+Tile <- SuperLib.Tile;
+Direction <- SuperLib.Direction;
+Town <- SuperLib.Town;
+Industry <- SuperLib.Industry;
+
+require("progress.nut");
 
 import("util.MinchinWeb", "MinchinWeb", 6);
 SpiralWalker <- MinchinWeb.SpiralWalker;
