@@ -253,9 +253,6 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
 // Initialization function
 function IndustryConstructor::Init() {
     RegisterIndustryGRF(industry_newgrf);
-
-    // Import settings
-    // Preprocess map
     MapPreprocess();
 
     // Rework this -- town eligibility is now more complicated
