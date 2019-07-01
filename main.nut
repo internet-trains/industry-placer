@@ -105,8 +105,7 @@ function IndustryConstructor::Load() {
 // Program start function
 function IndustryConstructor::Start() {
     this.Init();
-    this.BuildIndustry();
-    this.ErrorHandler();
+    //this.BuildIndustry();
 }
 
 // Initialization function
