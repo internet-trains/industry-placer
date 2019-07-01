@@ -95,52 +95,11 @@ class IndustryConstructor extends GSController {
 
 // Save function
 function IndustryConstructor::Save() {
-    //Display save msg
-    Log.Info("+==============================+", Log.LVL_INFO);
-    Log.Info("Saving data", Log.LVL_INFO);
-
-    // Create the save data table
-    local SV_DATA = {
-        //SV_IND_TYPE_LIST = IND_TYPE_LIST
-        SV_RAW = RAWINDUSTRY_LIST,
-        SV_PROC = PROCINDUSTRY_LIST,
-        SV_TERT = TERTIARYINDUSTRY_LIST,
-        SV_CLUSTERNODE_IND = CLUSTERNODE_LIST_IND,
-        SV_CLUSTERNODE_COUNT = CLUSTERNODE_LIST_COUNT,
-        SV_CLUSTERTILES = CLUSTERTILE_LIST,
-        SV_TOWNNODE_TOWN = TOWNNODE_LIST_TOWN,
-        SV_TOWNNODE_IND = TOWNNODE_LIST_IND,
-        SV_TOWNNODE_COUNT = TOWNNODE_LIST_COUNT
-    };
-
-    // Return save data to call
-    this.ErrorHandler();
-    return SV_DATA;
+    return null;
 }
 
 // Load function
-function IndustryConstructor::Load(SV_VERSION, SV_TABLE) {
-    // Display load msg
-    Log.Info("+==============================+", Log.LVL_INFO);
-    Log.Info("Loading data, saved with version " + SV_VERSION + " of game script", Log.LVL_INFO);
-
-    // Loop through save table
-    foreach(SV_KEY, SV_VAL in SV_TABLE) {
-        if(SV_KEY == "SV_IND_TYPE_LIST") IND_TYPE_LIST = SV_VAL;
-        if(SV_KEY == "SV_RAW") RAWINDUSTRY_LIST = SV_VAL;
-        if(SV_KEY == "SV_PROC") PROCINDUSTRY_LIST = SV_VAL;
-        if(SV_KEY == "SV_TERT") TERTIARYINDUSTRY_LIST = SV_VAL;
-        if(SV_KEY == "SV_CLUSTERNODE_IND") CLUSTERNODE_LIST_IND = SV_VAL;
-        if(SV_KEY == "SV_CLUSTERNODE_COUNT") CLUSTERNODE_LIST_COUNT = SV_VAL;
-        if(SV_KEY == "SV_CLUSTERTILES") CLUSTERTILE_LIST = SV_VAL;
-        if(SV_KEY == "SV_TOWNNODE_TOWN") TOWNNODE_LIST_TOWN = SV_VAL;
-        if(SV_KEY == "SV_TOWNNODE_IND") TOWNNODE_LIST_IND = SV_VAL;
-        if(SV_KEY == "SV_TOWNNODE_COUNT") TOWNNODE_LIST_COUNT = SV_VAL;
-    }
-    // Update load status
-    LOAD_PERFORMED = true;
-    FIRSTBUILD_PERFORMED = true;
-    this.ErrorHandler();
+function IndustryConstructor::Load() {
 }
 
 // Program start function
