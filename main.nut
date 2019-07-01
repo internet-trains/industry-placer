@@ -462,15 +462,22 @@ function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
 // return 1 if built and 0 if not
 // TODO: town industry limits per-town; drop from eligibility once enough industries have been built in a town
 // Also drop the tiles from the eligible tiles list
+
+// Big issue: town eligibility is really eligibility by class -- we can exhaust all the shore tiles of a town, but still be able to build industries on land near the town. How to handle?
 function IndustryConstructor::TownBuildMethod(industry_id) {
-    local ind_name = GSIndustryType.GetName(industry_id);
-    // Check if the list is not empty
+    // Check if the list is not empty -- should this be handled before this function is called?
     if(eligible_towns.IsEmpty() == true) {
         Print("No more eligible towns!");
         return 0;
     }
+    local ind_name = GSIndustryType.GetName(industry_id);
+    local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local town_id = RandomAccessGSList(eligible_towns);
     local eligible_tiles = GetEligibleTownTiles(town_id);
+    // Exclude eligible tiles based on industry class:
+    eligible_tiles = FilterToTerrain(eligible_tiles, terrain_class);
+    Print(GSTown.GetName(town_id));
+    DiagnosticTileMap(eligible_tiles);
     // For each tile in the town tile list, try to build in one of them randomly
     // - Maintain spacing as given by config file
     // - Once built, remove the tile ID from the global eligible tile list
