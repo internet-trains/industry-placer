@@ -350,11 +350,13 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
         Log.Error(" ~IndustryConstructor.TownBuildMethod: No more eligible towns.", Log.LVL_INFO);
         return 0;
     }
-
-    local town_id = eligible_towns[GSBase.RandRange(eligible_towns.Count())];
-    // Debug msg
-    Log.Info("   ~Trying to build in " + GSTown.GetName(town_id), Log.LVL_DEBUG);
-    local eligible_tiles = this.GetEligibleTownTiles(town_id);
+    local town_index = GSBase.RandRange(eligible_town_id_array.len());
+    local town_id = eligible_town_id_array[town_index];
+    local eligible_tiles = GetEligibleTownTiles(town_id);
+    local eligible_tile_id_array = [];
+    foreach(tile_id, value in eligible_tiles) {
+        eligible_tile_id_array.push(tile_id);
+    }
 
     // For each tile in the town tile list, try to build in one of them randomly
     // - Maintain spacing as given by config file
@@ -362,17 +364,26 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     // - Two checks at the end:
     //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
     //    - Check if the town we just built in now no longer has any eligible tiles
-    foreach(tile_id in eligible_tiles) {
-        // Remove from global eligible tile list
-        local build_success = GSIndustryType.BuildIndustry(industry_id, tile_id);
+    while(eligible_tile_id_array.len() > 0) {
+        // Pull a random tile
+        local tile_index = GSBase.RandRange(eligible_tile_id_array.len());
+        local attempt_tile = eligible_tile_id_array[tile_index];
+        eligible_tile_id_array.remove(tile_index);
+        eligible_town_tiles.RemoveItem(attempt_tile);
+        local build_success = GSIndustryType.BuildIndustry(industry_id, attempt_tile);
+        // Check if town has any eligible tiles left in it and remove from global eligible town list if not
+        if(GetEligibleTownTiles(town_id).Count() == 0) {
+            eligible_towns.RemoveItem(town_id);
+            eligible_town_id_array.remove(town_index);
+        }
         if(build_success) {
-            // 1. Check town industry limit and remove town from global eligible town list if so
-            // 2. Check if town has any eligible tiles left in it from the global eligible tile list
+            Print("Founded " + ind_name + " in " + GSTown.GetName(town_id));
+            // 1. Check town industry limit (TK) and remove town from global eligible town list if so
             return 1;
         }
     }
-    // Remove town from global eligible town list -- all tiles exhausted
-    Log.Error("IndustryConstructor.TownBuildMethod: Town exhausted.", Log.LVL_INFO)
+    Print(GSTown.GetName(town_id) + " exhausted.");
+    // Tiles exhausted, return
     return 0;
 }
 
