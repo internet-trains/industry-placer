@@ -160,8 +160,9 @@ function IndustryConstructor::InArray(item, array) {
     MapPreprocess();
     eligible_towns = GSTownList();
     eligible_town_tiles = BuildEligibleTownTiles();
-    BuildEligibleTowns();
-    /**
+    foreach(town_id, value in eligible_towns) {
+        town_industry_counts.AddItem(town_id, 0);
+    }
     while(true) {
         test_counter++;
         TownBuildMethod(2);
