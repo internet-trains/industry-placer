@@ -339,9 +339,10 @@ function IndustryConstructor::BuildIndustry() {
 
 // Town build method function
 // return 1 if built and 0 if not
-function IndustryConstructor::TownBuildMethod(INDUSTRY_ID) {
-
-    local ind_name = GSIndustryType.GetName(INDUSTRY_ID);
+// TODO: town industry limits per-town; drop from eligibility once enough industries have been built in a town
+// Also drop the tiles from the eligible tiles list
+function IndustryConstructor::TownBuildMethod(industry_id) {
+    local ind_name = GSIndustryType.GetName(industry_id);
 
 
     // Check if the list is not empty
