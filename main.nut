@@ -54,6 +54,7 @@ class IndustryConstructor extends GSController {
     build_limit = 0;
     town_industry_limit = 4; // set in config
     town_radius = 15; // set in config
+    industry_newgrf = "North American FIRS"; //set in config
 
     chunk_size = 256; // Change this if Valuate runs out of CPU time
 
@@ -89,6 +90,17 @@ class IndustryConstructor extends GSController {
     density_proc_method = 0; // set from settings, in industryconstructor.init.
     density_tert_method = 0; // set from settings, in industryconstructor.init.
 
+    industry_classes = GSIndustryTypeList(); // Stores the build-type of industries
+    industry_class_lookup = [
+                             "Default",
+                             "Water",
+                             "Shore",
+                             "TownBldg",
+                             "NearTown",
+                             "Nondesert",
+                             "Nonsnow",
+                             "Nonsnowdesert"];
+
     constructor() {
     }
 }
@@ -117,45 +129,132 @@ function IndustryConstructor::InArray(item, array) {
     return false;
 }
 
-    // Identify industries by type - primary, secondary, tertiary
-    // This is where we will put manual overrides when we get to them
-    // Including but not limited to - water based industry, shore based industry
-    **/
-    foreach(ind_id, value in GSIndustryTypeList()) {
-        local ind_name = GSIndustryType.GetName(ind_id);
+function IndustryConstructor::RegisterIndustryGRF(name) {
+    Print("Registering " + name + " industries.");
+    local water_based_industries = [];
+    local shore_based_industries = [];
+    local townbldg_based_industries = [];
+    local neartown_based_industries = [];
+    local nondesert_based_industries = [];
+    local nonsnow_based_industries = [];
+    local nonsnowdesert_based_industries = [];
+    // Overrides are for industries that we want to force into a tier
+    /*
+     * From the API docs:
+     *   Industries might be neither raw nor processing. This is usually the
+     *   case for industries which produce nothing (e.g. power plants), but
+     *   also for weird industries like temperate banks and tropic lumber
+     *   mills.
+     */
+    local primary_override = [];
+    local secondary_override = [];
+    local tertiary_override = [];
+    if(name == "North American FIRS") {
+        water_based_industries = [
+                                  "Oil Rig",
+                                  "Fishing Site",
+                                  "Dredging Site"
+                                  ];
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Goods Port",
+                                  "Liquids Terminal"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store",
+                                     "Grocery Store",
+                                     "Hardware Store",
+                                     "Smithy Forge"
+                                     ];
+        neartown_based_industries = [
+                                     "Vehicle Dealer",
+                                     "Bank"
+                                     ];
+        nondesert_based_industries = [
+                                      "Forestry"
+                                      ];
+        nonsnow_based_industries = [
+                                    "Fruit Plantation"
+                                    ];
+        nonsnowdesert_based_industries = [
+                                          "Arable Farm",
+                                          "Dairy Farm",
+                                          "Mixed Farm"
+                                          ];
+        tertiary_override = [
+                             "Mint"
+                             ];
+    }
+    if(name == "FIRS Complex") {
+        //tk
+    }
+    if(name == "FIRS Steeltown") {
+        //tk
+    }
 
-        if (GSIndustryType.IsRawIndustry(ind_id)) {
-            Log.Info(" ~Raw Industry: " + ind_name, Log.LVL_INFO);
-            rawindustry_list.push(ind_id);
-        } else {
-        /*
-         * From the API docs:
-         *   Industries might be neither raw nor processing. This is usually the
-         *   case for industries which produce nothing (e.g. power plants), but
-         *   also for weird industries like temperate banks and tropic lumber
-         *   mills.
-         */
-            if (GSIndustryType.IsProcessingIndustry(ind_id)) {
-                Log.Info(" ~Processor Industry: " + ind_name, Log.LVL_INFO);
-                procindustry_list.push(ind_id);
-            }
-            else {
-                Log.Info(" ~Tertiary Industry: " + ind_name, Log.LVL_INFO);
-                tertiaryindustry_list.push(ind_id);
-            }
+    foreach(ind_id, value in industry_classes) {
+        local ind_name = GSIndustryType.GetName(ind_id);
+        if(InArray(ind_name, water_based_industries)) {
+            industry_classes.SetValue(ind_id, 1);
+        }
+        if(InArray(ind_name, shore_based_industries)) {
+            industry_classes.SetValue(ind_id, 2);
+        }
+        if(InArray(ind_name, townbldg_based_industries)) {
+            industry_classes.SetValue(ind_id, 3);
+        }
+        if(InArray(ind_name, neartown_based_industries)) {
+            industry_classes.SetValue(ind_id, 4);
+        }
+        if(InArray(ind_name, nondesert_based_industries)) {
+            industry_classes.SetValue(ind_id, 5);
+        }
+        if(InArray(ind_name, nonsnow_based_industries)) {
+            industry_classes.SetValue(ind_id, 6);
+        }
+        if(InArray(ind_name, nonsnowdesert_based_industries)) {
+            industry_classes.SetValue(ind_id, 7);
         }
     }
 
+    foreach(ind_id, value in GSIndustryTypeList()) {
+        local ind_name = GSIndustryType.GetName(ind_id);
+        // We have to descend down these if else statements in order
+        // Otherwise the overrides don't work
+        if(InArray(ind_name, primary_override)) {
+            rawindustry_list.push(ind_id);
+        } else if(InArray(ind_name, secondary_override)) {
+            procindustry_list.push(ind_id);
+        } else if(InArray(ind_name, tertiary_override)) {
+            tertiaryindustry_list.push(ind_id);
+        } else if(GSIndustryType.IsRawIndustry(ind_id)) {
+            rawindustry_list.push(ind_id);
+        } else if(GSIndustryType.IsProcessingIndustry(ind_id)) {
+            procindustry_list.push(ind_id);
+        } else {
+            tertiaryindustry_list.push(ind_id);
+        }
+    }
+    Print("-----Primary industries:-----");
+    foreach(ind_id in rawindustry_list) {
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+    }
+    Print("-----Secondary industries:-----");
+    foreach(ind_id in procindustry_list) {
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+    }
+    Print("-----Tertiary industries:-----");
+    foreach(ind_id in tertiaryindustry_list) {
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+    }
+    Print("Registration done.")
+}
+
+// Initialization function
+function IndustryConstructor::Init() {
+    RegisterIndustryGRF(industry_newgrf);
+
     // Import settings
-    /**
-    // - Assign settings
-    local raw_count = GSController.GetSetting("raw_count");
-        if(rawindustry_list_count < 1) raw_prop = 0;
-    local proc_count = GSController.GetSetting("proc_count").tofloat();
-        if(procindustry_list_count < 1) proc_prop = 0;
-    local tert_count = GSController.GetSetting("tert_count").tofloat();
-        if(tertiaryindustry_list_count < 1) tert_prop = 0;
-    **/
     // Preprocess map
     MapPreprocess();
     eligible_towns = GSTownList();
