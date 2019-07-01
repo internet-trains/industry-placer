@@ -394,12 +394,7 @@ function IndustryConstructor::GetEligibleTownTiles(town_id) {
 
 // Builds industries in the order of their IDs
 function IndustryConstructor::BuildIndustry() {
-    // Display status msg
-    Log.Info("+==============================+", Log.LVL_INFO);
-    Log.Info("Building industries...", Log.LVL_INFO);
-
-    // Iterate through the list of all industries
-    Log.Info(" ~Building " + BUILD_TARGET + " " + GSIndustryType.GetName(CURRENT_IND_ID), Log.LVL_SUB_DECISIONS);
+    Print("Building industries:");
 
     foreach(industry_id in GSIndustryTypeList) {
         build_method = LookupIndustryBuildMethod(industry_id);
