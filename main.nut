@@ -645,4 +645,8 @@ function IndustryConstructor::FarFromIndustry(tile_id) {
     return ind_distance > (GSController.GetSetting("TOWN_MIN_IND"));
 }
 
+function IndustryConstructor::Print(string) {
+    Log.Info((GSDate.GetSystemTime() % 3600) + " " + string, Log.LVL_INFO);
+}
+
 }
