@@ -108,16 +108,6 @@ function IndustryConstructor::Start() {
     //this.BuildIndustry();
 }
 
-// Initialization function
-function IndustryConstructor::Init() {
-    /**
-    // Assign PAX cargo id ---- why is this step necessary?
-    // - Create cargo list
-    local CARGO_LIST = GSCargoList();
-    // - Loop for each cargo
-    foreach(CARGO_ID in CARGO_LIST) {
-        // - Assign passenger cargo ID
-        if(GSCargo.GetTownEffect(CARGO_ID) == GSCargo.TE_PASSENGERS) CARGO_PAXID = CARGO_ID;
 function IndustryConstructor::InArray(item, array) {
     for(local i = 0; i < array.len(); i++) {
         if(array[i] == item) {
