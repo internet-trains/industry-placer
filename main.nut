@@ -64,7 +64,7 @@ class IndustryConstructor extends GSController {
     eligible_towns = GSTownList();
     eligible_town_tiles = GSTileList();
 
-    eligible_town_id_array = [];
+    town_industry_counts = GSList();
 
     cluster_node_ids = [];
 
@@ -229,7 +229,6 @@ function IndustryConstructor::GetChunk(x, y) {
 
 // Go through each town and identify every valid tile_id (do we have a way to ID the town of a tile?)
 function IndustryConstructor::BuildEligibleTownTiles() {
-
     /*
     1. get every town
     2. get every tile in every town
@@ -263,12 +262,6 @@ function IndustryConstructor::DiagnosticTileMap(tilelist) {
     GSController.Sleep(1);
     foreach(sign_id, value in GSSignList()) {
         GSSign.RemoveSign(sign_id);
-    }
-}
-
-function IndustryConstructor::BuildEligibleTowns() {
-    foreach(town_id, value in eligible_towns) {
-        eligible_town_id_array.push(town_id);
     }
 }
 
@@ -343,48 +336,55 @@ function IndustryConstructor::BuildIndustry() {
 // Also drop the tiles from the eligible tiles list
 function IndustryConstructor::TownBuildMethod(industry_id) {
     local ind_name = GSIndustryType.GetName(industry_id);
-
-
     // Check if the list is not empty
     if(eligible_towns.IsEmpty() == true) {
-        Log.Error(" ~IndustryConstructor.TownBuildMethod: No more eligible towns.", Log.LVL_INFO);
+        Print("No more eligible towns!");
         return 0;
     }
-    local town_index = GSBase.RandRange(eligible_town_id_array.len());
-    local town_id = eligible_town_id_array[town_index];
+    local town_id = RandomAccessGSList(eligible_towns);
     local eligible_tiles = GetEligibleTownTiles(town_id);
-    local eligible_tile_id_array = [];
-    foreach(tile_id, value in eligible_tiles) {
-        eligible_tile_id_array.push(tile_id);
-    }
-
     // For each tile in the town tile list, try to build in one of them randomly
     // - Maintain spacing as given by config file
     // - Once built, remove the tile ID from the global eligible tile list
     // - Two checks at the end:
     //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
     //    - Check if the town we just built in now no longer has any eligible tiles
-    while(eligible_tile_id_array.len() > 0) {
+    while(eligible_tiles.Count() > 0) {
         // Pull a random tile
-        local tile_index = GSBase.RandRange(eligible_tile_id_array.len());
-        local attempt_tile = eligible_tile_id_array[tile_index];
-        eligible_tile_id_array.remove(tile_index);
-        eligible_town_tiles.RemoveItem(attempt_tile);
+        local attempt_tile = RandomAccessGSList(eligible_tiles);
+        eligible_tiles.RemoveItem(attempt_tile);
+        ClearTile(attempt_tile);
         local build_success = GSIndustryType.BuildIndustry(industry_id, attempt_tile);
         // Check if town has any eligible tiles left in it and remove from global eligible town list if not
         if(GetEligibleTownTiles(town_id).Count() == 0) {
             eligible_towns.RemoveItem(town_id);
-            eligible_town_id_array.remove(town_index);
         }
         if(build_success) {
             Print("Founded " + ind_name + " in " + GSTown.GetName(town_id));
-            // 1. Check town industry limit (TK) and remove town from global eligible town list if so
+            // Check town industry limit (TK) and remove town from global eligible town list if so
+            local town_current_industries = town_industry_counts.GetValue(town_id) + 1;
+            town_industry_counts.SetValue(town_id, town_current_industries);
+            if(town_current_industries == town_industry_limit) {
+                // Remove town from eligible list AND remove its tiles from the eligible tiles list
+                foreach(tile_id, value in GetEligibleTownTiles(town_id)) {
+                    ClearTile(tile_id);
+                }
+                eligible_towns.RemoveItem(town_id);
+            }
             return 1;
         }
     }
     Print(GSTown.GetName(town_id) + " exhausted.");
     // Tiles exhausted, return
     return 0;
+}
+
+function IndustryConstructor::RandomAccessGSList(gslist) {
+    local index = [];
+    foreach(item, value in gslist) {
+        index.push(item);
+    }
+    return index[GSBase.RandRange(index.len())];
 }
 
 // Clean remove function for tiles
