@@ -49,70 +49,47 @@ SpiralWalker <- MinchinWeb.SpiralWalker;
 // https://www.tt-forums.net/viewtopic.php?f=65&t=57903
 // SpiralWalker - allows you to define a starting point and walks outward
 
-// Extend GS class
 class IndustryConstructor extends GSController {
-    MAP_SIZE_X = 1.0;
-    MAP_SIZE_Y = 1.0;
-    MAP_SCALE = 1.0;
+    test_counter = 0;
+    build_limit = 0;
+    town_industry_limit = 4; // set in config
+    town_radius = 15; // set in config
 
-    BUILD_LIMIT = 0; // Set from settings, in class constructor and each refresh.(initial is max ind per map, subs is max per refresh)
-    CONTINUE_GS = null; // True if whole script must continue.
-    INIT_PERFORMED = false; // True if IndustryConstructor.Init has run.
-    LOAD_PERFORMED = false; // Bool of load status
-    FIRSTBUILD_PERFORMED = null; // True if IndustryConstructor.Load OR IndustryConstructor.BuildIndustryClass has run.
-    PRIMARY_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for primary industries.
-    SECONDARY_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for secondary industries.
-    TERTIARY_PERFORMED = null; // True if IndustryConstructor.BuildIndustryClass has run for tertiary industries.
-    BUILD_SPEED = 0; // Global build speed variable
+    chunk_size = 256; // Change this if Valuate runs out of CPU time
 
-    CLUSTERNODE_LIST_IND = []; // Sub-array of industry types, for cluster builder
-    CLUSTERNODE_LIST_COUNT = []; // Sub-array of industry count, for cluster builder
-    CLUSTERTILE_LIST = []; // Sub-array of node tiles, must be used with above 2D
 
-    eligible_town_tiles = [];
-    eligible_towns = [];
-    TOWNNODE_LIST_TOWN = []; // Sub-array of town ids registered
-    TOWNNODE_LIST_IND = []; // Sub-array of industry types, for town builder
-    TOWNNODE_LIST_COUNT = []; // Sub-array of industry count, for town builder
+    land_tiles = GSTileList();
+    shore_tiles = GSTileList();
+    water_tiles = GSTileList();
+    eligible_towns = GSTownList();
+    eligible_town_tiles = GSTileList();
 
-    IND_TYPE_LIST = 0; // Is GSIndustryTypeList(), set in IndustryConstructor.Init.
-    IND_TYPE_COUNT = 0; // Count of industries in this.IND_TYPE_LIST, set in IndustryConstructor.Init.
-    CARGO_PAXID = 0; // Passenger cargo ID, set in IndustryConstructor.Init.
+    eligible_town_id_array = [];
 
-    RAWINDUSTRY_LIST = []; // Array of raw industry type ID's, set in IndustryConstructor.Init.
-    RAWINDUSTRY_LIST_COUNT = 0; // Count of primary industries, set in IndustryConstructor.Init.
-    PROCINDUSTRY_LIST = []; // Array of processor industry type ID's, set in IndustryConstructor.Init.
-    PROCINDUSTRY_LIST_COUNT = 0; // Count of secondary industries, set in IndustryConstructor.Init.
-    TERTIARYINDUSTRY_LIST = []; // Array of tertiary industry type ID's, set in IndustryConstructor.Init.
-    TERTIARYINDUSTRY_LIST_COUNT = 0; // Count of tertiary industries, set in IndustryConstructor.Init.
+    cluster_node_ids = [];
 
-    // User variables
-    DENSITY_IND_TOTAL = 0; // Set from settings, in IndustryConstructor.Init. Total industries, integer always >= 1
-    DENSITY_IND_MIN = 0; // Set from settings, in IndustryConstructor. Init.Min industry density %, float always < 1.
-    DENSITY_IND_MAX = 0; // Set from settings, in IndustryConstructor.Init. Max industry density %, float always > 1.
-    DENSITY_RAW_PROP = 0; // Set from settings, in IndustryConstructor.Init. Primary industry proportion, float always < 1.
-    DENSITY_PROC_PROP = 0; // Set from settings, in IndustryConstructor.Init. Secondary industry proportion, float always < 1.
-    DENSITY_TERT_PROP = 0; // Set from settings, in IndustryConstructor.Init. Tertiary industry proportion, float always < 1.
-    DENSITY_RAW_METHOD = 0; // Set from settings, in IndustryConstructor.Init.
-    DENSITY_PROC_METHOD = 0; // Set from settings, in IndustryConstructor.Init.
-    DENSITY_TERT_METHOD = 0; // Set from settings, in IndustryConstructor.Init.
+    ind_type_count = 0; // count of industries in this.ind_type_list, set in industryconstructor.init.
+    cargo_paxid = 0; // passenger cargo id, set in industryconstructor.init.
+
+    rawindustry_list = []; // array of raw industry type id's, set in industryconstructor.init.
+    rawindustry_list_count = 0; // count of primary industries, set in industryconstructor.init.
+    procindustry_list = []; // array of processor industry type id's, set in industryconstructor.init.
+    procindustry_list_count = 0; // count of secondary industries, set in industryconstructor.init.
+    tertiaryindustry_list = []; // array of tertiary industry type id's, set in industryconstructor.init.
+    tertiaryindustry_list_count = 0; // count of tertiary industries, set in industryconstructor.init.
+
+    // user variables
+    density_ind_total = 0; // set from settings, in industryconstructor.init. total industries, integer always >= 1
+    density_ind_min = 0; // set from settings, in industryconstructor. init.min industry density %, float always < 1.
+    density_ind_max = 0; // set from settings, in industryconstructor.init. max industry density %, float always > 1.
+    density_raw_prop = 0; // set from settings, in industryconstructor.init. primary industry proportion, float always < 1.
+    density_proc_prop = 0; // set from settings, in industryconstructor.init. secondary industry proportion, float always < 1.
+    density_tert_prop = 0; // set from settings, in industryconstructor.init. tertiary industry proportion, float always < 1.
+    density_raw_method = 0; // set from settings, in industryconstructor.init.
+    density_proc_method = 0; // set from settings, in industryconstructor.init.
+    density_tert_method = 0; // set from settings, in industryconstructor.init.
 
     constructor() {
-        LOAD_PERFORMED = false;
-        INIT_PERFORMED = false;
-        CONTINUE_GS = true;
-        MAP_SIZE_X = GSMap.GetMapSizeX();
-        MAP_SIZE_Y = GSMap.GetMapSizeY();
-        BUILD_LIMIT = GSController.GetSetting("BUILD_LIMIT");
-        FIRSTBUILD_PERFORMED = false;
-        PRIMARY_PERFORMED = false;
-        SECONDARY_PERFORMED = false;
-        TERTIARY_PERFORMED = false;
-
-        // Create a new industry type list
-        IND_TYPE_LIST = GSIndustryTypeList();
-        // Count industry types
-        IND_TYPE_COUNT = IND_TYPE_LIST.Count();
     }
 }
 
