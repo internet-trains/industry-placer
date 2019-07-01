@@ -272,6 +272,20 @@ function IndustryConstructor::BuildEligibleTowns() {
     }
 }
 
+function IndustryConstructor::RectangleAroundTile(tile_id, radius) {
+    local tile_x = GSMap.GetTileX(tile_id);
+    local tile_y = GSMap.GetTileY(tile_id);
+    local from_x = min(max(tile_x - radius, 1), GSMap.GetMapSizeX() - 2);
+    local from_y = min(max(tile_y - radius, 1), GSMap.GetMapSizeY() - 2);
+    local from_tile = GSMap.GetTileIndex(from_x, from_y);
+    local to_x = min(max(tile_x + radius, 1), GSMap.GetMapSizeX() - 2);
+    local to_y = min(max(tile_y + radius, 1), GSMap.GetMapSizeY() - 2);
+    local to_tile = GSMap.GetTileIndex(to_x, to_y);
+    local tiles = GSTileList();
+    tiles.AddRectangle(from_tile, to_tile);
+    return tiles;
+}
+
 // Fetch eligible tiles belonging to the town with the given ID
 function IndustryConstructor::GetEligibleTownTiles(town_id) {
     if(!eligible_towns.HasItem(town_id)) {
