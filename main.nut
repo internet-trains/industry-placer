@@ -649,4 +649,28 @@ function IndustryConstructor::Print(string) {
     Log.Info((GSDate.GetSystemTime() % 3600) + " " + string, Log.LVL_INFO);
 }
 
+/*
+ * Given a list of tiles, expand to include 5 tiles in the 'north' and 'west' direction
+ */
+function IndustryConstructor::AddBuffer(tile_list, buffer_x_neg, buffer_y_neg, buffer_x_pos, buffer_y_pos, debug = false) {
+    local buffer_list = GSTileList();
+    foreach(tile, value in tile_list) {
+        // Add not just the tile, but all tiles north and west by buffer amount
+        for(local y_offset = -buffer_y_pos; y_offset <= buffer_y_neg; y_offset++) {
+            for(local x_offset = -buffer_x_pos; x_offset <= buffer_x_neg; x_offset++) {
+                local candidate_x = GSMap.GetTileX(tile);
+                local candidate_y = GSMap.GetTileY(tile);
+                candidate_x = min(max(candidate_x + x_offset, 1), GSMap.GetMapSizeX() - 2);
+                candidate_y = min(max(candidate_y + y_offset, 1), GSMap.GetMapSizeY() - 2);
+                local candidate_tile = GSMap.GetTileIndex(candidate_x, candidate_y);
+                if(!buffer_list.HasItem(candidate_tile)) {
+                    buffer_list.AddTile(candidate_tile);
+                    if(debug) {
+                        GSSign.BuildSign(candidate_tile, ".");
+                    }
+                }
+            }
+        }
+    }
+    return buffer_list;
 }
