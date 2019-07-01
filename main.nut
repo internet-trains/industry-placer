@@ -631,18 +631,18 @@ function IndustryConstructor::ListMinMaxXY(tile_list, two_tile) {
 // Function to check if tile is industry, returns true or false
 function IsIndustry(tile_id) {return (GSIndustry.GetIndustryID(tile_id) != 65535);}
 
-// Function to valuate town by dist from edge
 function GetTownDistFromEdge(town_id) {
     return GSMap.DistanceFromEdge(GSTown.GetLocation(town_id));
 }
 
-// Helper function
-// Given a tile, returns true if the nearest industry is further away than
-// TOWN_MIN_IND as defined in config (minimum spacing between town and industry)
+// Given a tile, returns true if the nearest industry is further away than TOWN_MIND_IND
 function IndustryConstructor::FarFromIndustry(tile_id) {
-    if(this.GetClosestIndustry(tile_id) == null) {
-        return 1; // null case - no industries on map
+    local nearest_industry_tile = this.GetClosestIndustry(tile_id);
+    if(nearest_industry_tile == null) {
+        return true; // null case - no industries on map
     }
-    local ind_distance = GSIndustry.GetDistanceManhattanToTile(this.GetClosestIndustry(tile_id), tile_id);
-    return ind_distance > (GSController.GetSetting("TOWN_MIN_IND") * MULTI);
+    local ind_distance = GSIndustry.GetDistanceManhattanToTile(nearest_industry_tile, tile_id);
+    return ind_distance > (GSController.GetSetting("TOWN_MIN_IND"));
+}
+
 }
