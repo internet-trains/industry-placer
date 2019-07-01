@@ -226,23 +226,56 @@ function IndustryConstructor::GetChunk(x, y) {
                                           min(y + 256, GSMap.GetMapSizeY() - 2)));
     return chunk;
 }
+
+// Go through each town and identify every valid tile_id (do we have a way to ID the town of a tile?)
+function IndustryConstructor::BuildEligibleTownTiles() {
+
+    /*
+    1. get every town
+    2. get every tile in every town
+    3. cull based on config parameters
+     */
+    Print("Building town tile list.");
+    local town_list = GSTownList();
+    town_list.Valuate(GSTown.GetLocation);
+    local all_town_tiles = GSTileList();
+    local progress = ProgressReport(town_list.Count());
+    foreach(town_id, tile_id in town_list) {
+        local local_town_tiles = RectangleAroundTile(tile_id, town_radius);
+        foreach(tile, value in local_town_tiles) {
+            if(!all_town_tiles.HasItem(tile)) {
+                all_town_tiles.AddTile(tile);
             }
         }
+        if(progress.Increment()) {
+            Print(progress);
+        }
     }
+    Print("Town tile list size: " + all_town_tiles.Count());
+    return all_town_tiles;
+}
 
-    // Import settings
 
-    // - Assign settings
-    local RAW_COUNT = GSController.GetSetting("RAW_COUNT");
-        if(RAWINDUSTRY_LIST_COUNT < 1) RAW_PROP = 0;
-    local PROC_COUNT = GSController.GetSetting("PROC_COUNT").tofloat();
-        if(PROCINDUSTRY_LIST_COUNT < 1) PROC_PROP = 0;
-    local TERT_COUNT = GSController.GetSetting("TERT_COUNT").tofloat();
-        if(TERTIARYINDUSTRY_LIST_COUNT < 1) TERT_PROP = 0;
+function IndustryConstructor::BuildEligibleTowns() {
+    foreach(town_id, value in eligible_towns) {
+        eligible_town_id_array.push(town_id);
+    }
+}
 
-    // Preprocess map
-    this.eligible_towns = this.BuildEligibleTowns();
-    this.eligible_town_tiles = this.BuildEligibleTownTiles();
+// Fetch eligible tiles belonging to the town with the given ID
+function IndustryConstructor::GetEligibleTownTiles(town_id) {
+    if(!eligible_towns.HasItem(town_id)) {
+        return null;
+    }
+    local town_tiles = RectangleAroundTile(GSTown.GetLocation(town_id), town_radius);
+    // now do a comparison between tiles in town_tiles and eligible_town_tiles
+    local local_eligible_tiles = GSTileList();
+    foreach(tile_id, value in town_tiles) {
+        if(eligible_town_tiles.HasItem(tile_id)) {
+            local_eligible_tiles.AddItem(tile_id, value);
+        }
+    }
+    return local_eligible_tiles;
 }
 
 // Builds industries in the order of their IDs
@@ -279,37 +312,6 @@ function IndustryConstructor::BuildIndustry() {
     }
 }
 
-// Map preprocess
-// Go through each town and identify every valid tile_id (do we have a way to ID the town of a tile?)
-function IndustryConstructor::BuildEligibleTownTiles() {
-
-    /*
-    1. get every town
-    2. get every tile in every town
-    3. cull based on config parameters
-     */
-
-    return eligible_town_tiles;
-}
-
-// Town preprocess
-// Go through every town and identify valid towns
-function IndustryConstructor::BuildEligibleTowns() {
-    /*
-    1. get all towns
-    2. cull based on config parameters
-     */
-    return eligible_towns
-}
-
-// Fetch eligible tiles belonging to the town with the given ID
-function IndustryConstructor::GetEligibleTownTiles(town_id) {
-    if(!eligible_towns.HasItem(town_id)) {
-        return null;
-    } else {
-        return eligible_town_tiles;
-    }
-}
 
 // Town build method function
 // return 1 if built and 0 if not
