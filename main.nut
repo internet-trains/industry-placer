@@ -159,15 +159,73 @@ function IndustryConstructor::Init() {
     local tert_count = GSController.GetSetting("tert_count").tofloat();
         if(tertiaryindustry_list_count < 1) tert_prop = 0;
     **/
+    // Preprocess map
+    MapPreprocess();
+    eligible_towns = GSTownList();
+    eligible_town_tiles = BuildEligibleTownTiles();
+    BuildEligibleTowns();
+    /**
+    while(true) {
+        test_counter++;
+        TownBuildMethod(2);
+        //DiagnosticTileMap(eligible_town_tiles);
+        //Print("---");
+        Print(test_counter);
+    }
+    **/
 
+}
+
+// Map preprocessor
+// Creates data for all tiles on the map
+function IndustryConstructor::MapPreprocess() {
+    Print("Building map tile list.");
+    local all_tiles = GSTileList();
+    all_tiles.AddRectangle(GSMap.GetTileIndex(1, 1),
+                           GSMap.GetTileIndex(GSMap.GetMapSizeX() - 2,
+                                              GSMap.GetMapSizeY() - 2));
+    Print("Map list size: " + all_tiles.Count());
+    local chunks = (GSMap.GetMapSizeX() - 2) * (GSMap.GetMapSizeY() - 2) / (chunk_size * chunk_size);
+    Print("Loading " + chunks + " chunks:");
+    // Hybrid approach:
+    // Break the map into chunk_size x chunk_size chunks and valuate on each of them
+    local progress = ProgressReport(chunks);
+    for(local y = 1; y < GSMap.GetMapSizeY() - 1; y += chunk_size) {
+        for(local x = 1; x < GSMap.GetMapSizeX() - 1; x += chunk_size) {
+            local chunk_land = GetChunk(x, y);
+            local chunk_shore = GetChunk(x, y);
+            local chunk_water = GetChunk(x, y);
+            chunk_land.Valuate(GSTile.IsCoastTile);
+            chunk_land.KeepValue(0);
+            chunk_land.Valuate(GSTile.IsWaterTile);
+            chunk_land.KeepValue(0);
+            chunk_shore.Valuate(GSTile.IsCoastTile);
+            chunk_shore.KeepValue(1);
+            chunk_water.Valuate(GSTile.IsWaterTile);
+            chunk_water.KeepValue(1);
+            land_tiles.AddList(chunk_land);
+            shore_tiles.AddList(chunk_shore);
+            water_tiles.AddList(chunk_water);
+            if(progress.Increment()) {
+                Print(progress);
             }
-            // Else is an other industry = TERTIARYINDUSTRY_LIST
-            else {
-                // Display industry type name msg
-                Log.Info(" ~Tertiary Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
+        }
+    }
 
-                // Add industry id to other list
-                TERTIARYINDUSTRY_LIST.push(IND_ID);
+    Print("Land tile list size: " + land_tiles.Count());
+    Print("Shore tile list size: " + shore_tiles.Count());
+    Print("Water tile list size: " + water_tiles.Count());
+}
+
+// Returns the map chunk with x, y in the upper left corner
+// i.e. GetChunk(1, 1) will give you (1, 1) to (257, 257)
+function IndustryConstructor::GetChunk(x, y) {
+    local chunk = GSTileList();
+    chunk.AddRectangle(GSMap.GetTileIndex(x, y),
+                       GSMap.GetTileIndex(min(x + 256, GSMap.GetMapSizeX() - 2),
+                                          min(y + 256, GSMap.GetMapSizeY() - 2)));
+    return chunk;
+}
             }
         }
     }
