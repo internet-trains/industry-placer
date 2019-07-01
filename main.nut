@@ -110,43 +110,20 @@ function IndustryConstructor::Start() {
 
 // Initialization function
 function IndustryConstructor::Init() {
-    // Display status msg
-    Log.Info("+==============================+", Log.LVL_INFO);
-    Log.Info("Initializing...", Log.LVL_INFO);
-
-    // Set Advanced Setting parameters
-    // - Check for multi ind per town setting
-    // - - Check if valid
-    if(GSGameSettings.IsValid("multiple_industry_per_town") == true) {
-        // - - Set to one in parameters
-        GSGameSettings.SetValue("multiple_industry_per_town", GSController.GetSetting("MULTI_IND_TOWN"));
-        // - - Check if false
-        if(GSGameSettings.GetValue("multiple_industry_per_town") == 0) Log.Warning("Multiple industries per town disabled, will slow down or prevent some build methods!", Log.LVL_INFO);
-    }
-    // -- Else invalid
-    else Log.Error("Multiple industries per town setting could not be detected!", Log.LVL_INFO);
-    // - Check for oil ind distance setting
-    // - - Check if valid
-    if(GSGameSettings.IsValid("oil_refinery_limit") == true) {
-        // - - Set to one in parameters
-        GSGameSettings.SetValue("oil_refinery_limit", GSController.GetSetting("MAX_OIL_DIST"));
-    }
-    // -- Else invalid
-    else Log.Error("Max distance from edge for Oil Refineries setting could not be detected!", Log.LVL_INFO);
-
-    // Assign PAX cargo id
+    /**
+    // Assign PAX cargo id ---- why is this step necessary?
     // - Create cargo list
     local CARGO_LIST = GSCargoList();
     // - Loop for each cargo
-    foreach (CARGO_ID in CARGO_LIST) {
+    foreach(CARGO_ID in CARGO_LIST) {
         // - Assign passenger cargo ID
         if(GSCargo.GetTownEffect(CARGO_ID) == GSCargo.TE_PASSENGERS) CARGO_PAXID = CARGO_ID;
     }
 
-    // Loop through list
-    foreach(IND_ID in IND_TYPE_LIST) {
-        // Get current ID name
-        IND_NAME = GSIndustryType.GetName(IND_ID);
+    // Identify industries by type - primary, secondary, tertiary
+    // This is where we will put manual overrides when we get to them
+    // Including but not limited to - water based industry, shore based industry
+    **/
 
         // If current ID is a raw producer = RAWINDUSTRY_LIST
         if (GSIndustryType.IsRawIndustry(IND_ID)) {
