@@ -118,7 +118,14 @@ function IndustryConstructor::Init() {
     foreach(CARGO_ID in CARGO_LIST) {
         // - Assign passenger cargo ID
         if(GSCargo.GetTownEffect(CARGO_ID) == GSCargo.TE_PASSENGERS) CARGO_PAXID = CARGO_ID;
+function IndustryConstructor::InArray(item, array) {
+    for(local i = 0; i < array.len(); i++) {
+        if(array[i] == item) {
+            return true;
+        }
     }
+    return false;
+}
 
     // Identify industries by type - primary, secondary, tertiary
     // This is where we will put manual overrides when we get to them
