@@ -421,6 +421,42 @@ function IndustryConstructor::BuildIndustry() {
     }
 }
 
+// Given a tile list, filter to only tiles of that terrain class
+function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
+    local filtered_list = GSTileList();
+    switch(terrain_class) {
+    case "Water":
+        foreach(tile_id, value in tile_list) {
+            Print("Water");
+            if(water_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            };
+        }
+        break;
+    case "Shore":
+        Print("Shore");
+        foreach(tile_id, value in tile_list) {
+            if(shore_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+        }
+        break;
+    case "TownBldg":
+    case "NearTown":
+    case "Nondesert":
+    case "Nonsnow":
+    case "Nonsnowdesert":
+    case "Default":
+        Print("Default");
+        foreach(tile_id, value in tile_list) {
+            if(land_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+        }
+        break;
+    }
+    return filtered_list;
+}
 
 // Town build method function
 // return 1 if built and 0 if not
