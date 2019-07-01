@@ -387,6 +387,18 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     return 0;
 }
 
+// Clean remove function for tiles
+// We maintain several parallel lists of tiles (each can be thought of as an 'information layer'
+// So when we remove a tile from eligibility, we should remove them from all of these lists
+// Be sure to come back and update this if new information layers are added
+// This is a TILE ID based function
+function IndustryConstructor::ClearTile(tile_id) {
+    land_tiles.RemoveItem(tile_id);
+    shore_tiles.RemoveItem(tile_id);
+    water_tiles.RemoveItem(tile_id);
+    eligible_town_tiles.RemoveItem(tile_id);
+}
+
 // Cluster build method function (2), return 1 if built and 0 if not
 function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
 
