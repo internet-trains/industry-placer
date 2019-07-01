@@ -63,7 +63,7 @@ class IndustryConstructor extends GSController {
     shore_tiles = GSTileList();
     water_tiles = GSTileList();
     eligible_towns = GSTownList();
-    eligible_town_tiles = GSTileList();
+    town_tiles = GSTileList();
 
     town_industry_counts = GSList();
 
@@ -257,8 +257,9 @@ function IndustryConstructor::Init() {
     // Import settings
     // Preprocess map
     MapPreprocess();
+
+    // Rework this -- town eligibility is now more complicated
     eligible_towns = GSTownList();
-    eligible_town_tiles = BuildEligibleTownTiles();
     foreach(town_id, value in eligible_towns) {
         town_industry_counts.AddItem(town_id, 0);
     }
@@ -308,7 +309,7 @@ function IndustryConstructor::MapPreprocess() {
             }
         }
     }
-
+    town_tiles = BuildEligibleTownTiles();
     Print("Land tile list size: " + land_tiles.Count());
     Print("Shore tile list size: " + shore_tiles.Count());
     Print("Water tile list size: " + water_tiles.Count());
@@ -381,11 +382,11 @@ function IndustryConstructor::GetEligibleTownTiles(town_id) {
     if(!eligible_towns.HasItem(town_id)) {
         return null;
     }
-    local town_tiles = RectangleAroundTile(GSTown.GetLocation(town_id), town_radius);
+    local local_town_tiles = RectangleAroundTile(GSTown.GetLocation(town_id), town_radius);
     // now do a comparison between tiles in town_tiles and eligible_town_tiles
     local local_eligible_tiles = GSTileList();
-    foreach(tile_id, value in town_tiles) {
-        if(eligible_town_tiles.HasItem(tile_id)) {
+    foreach(tile_id, value in local_town_tiles) {
+        if(local_town_tiles.HasItem(tile_id)) {
             local_eligible_tiles.AddItem(tile_id, value);
         }
     }
@@ -531,7 +532,7 @@ function IndustryConstructor::ClearTile(tile_id) {
     land_tiles.RemoveItem(tile_id);
     shore_tiles.RemoveItem(tile_id);
     water_tiles.RemoveItem(tile_id);
-    eligible_town_tiles.RemoveItem(tile_id);
+    town_tiles.RemoveItem(tile_id);
 }
 
 // Cluster build method function (2), return 1 if built and 0 if not
