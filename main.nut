@@ -124,24 +124,42 @@ function IndustryConstructor::Init() {
     // This is where we will put manual overrides when we get to them
     // Including but not limited to - water based industry, shore based industry
     **/
+    foreach(ind_id, value in GSIndustryTypeList()) {
+        local ind_name = GSIndustryType.GetName(ind_id);
 
-        // If current ID is a raw producer = RAWINDUSTRY_LIST
-        if (GSIndustryType.IsRawIndustry(IND_ID)) {
-            // Display industry type name msg
-            Log.Info(" ~Raw Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
-
-            // Add industry id to raw list
-            RAWINDUSTRY_LIST.push(IND_ID);
+        if (GSIndustryType.IsRawIndustry(ind_id)) {
+            Log.Info(" ~Raw Industry: " + ind_name, Log.LVL_INFO);
+            rawindustry_list.push(ind_id);
+        } else {
+        /*
+         * From the API docs:
+         *   Industries might be neither raw nor processing. This is usually the
+         *   case for industries which produce nothing (e.g. power plants), but
+         *   also for weird industries like temperate banks and tropic lumber
+         *   mills.
+         */
+            if (GSIndustryType.IsProcessingIndustry(ind_id)) {
+                Log.Info(" ~Processor Industry: " + ind_name, Log.LVL_INFO);
+                procindustry_list.push(ind_id);
+            }
+            else {
+                Log.Info(" ~Tertiary Industry: " + ind_name, Log.LVL_INFO);
+                tertiaryindustry_list.push(ind_id);
+            }
         }
-        //else not a raw producer
-        else {
-            // If current ID is a processor = PROCINDUSTRY_LIST
-            if (GSIndustryType.IsProcessingIndustry(IND_ID)) {
-                // Display industry type name msg
-                Log.Info(" ~Processor Industry: " + IND_NAME, Log.LVL_SUB_DECISIONS);
+    }
 
-                // Add industry id to processor list
-                PROCINDUSTRY_LIST.push(IND_ID);
+    // Import settings
+    /**
+    // - Assign settings
+    local raw_count = GSController.GetSetting("raw_count");
+        if(rawindustry_list_count < 1) raw_prop = 0;
+    local proc_count = GSController.GetSetting("proc_count").tofloat();
+        if(procindustry_list_count < 1) proc_prop = 0;
+    local tert_count = GSController.GetSetting("tert_count").tofloat();
+        if(tertiaryindustry_list_count < 1) tert_prop = 0;
+    **/
+
             }
             // Else is an other industry = TERTIARYINDUSTRY_LIST
             else {
