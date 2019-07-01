@@ -255,6 +255,16 @@ function IndustryConstructor::BuildEligibleTownTiles() {
     return all_town_tiles;
 }
 
+// Paints on the map all tiles in a given list
+function IndustryConstructor::DiagnosticTileMap(tilelist) {
+    foreach(tile_id, value in tilelist) {
+        GSSign.BuildSign(tile_id, ".");
+    }
+    GSController.Sleep(1);
+    foreach(sign_id, value in GSSignList()) {
+        GSSign.RemoveSign(sign_id);
+    }
+}
 
 function IndustryConstructor::BuildEligibleTowns() {
     foreach(town_id, value in eligible_towns) {
