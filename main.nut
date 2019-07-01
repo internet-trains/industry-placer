@@ -519,10 +519,7 @@ function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
 }
 
 // Scattered build method function (3), return 1 if built and 0 if not
-function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
-    local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID); // Industry name string
-    local TILE_ID = null;
-    local BUILD_TRIES = ((256 * 256 * 3) * MAP_SCALE).tointeger();
+function IndustryConstructor::ScatteredBuildMethod(industry_id) {
     local TOWN_DIST = 0;
     local IND = null;
     local IND_DIST = 0;
@@ -551,7 +548,7 @@ function IndustryConstructor::ScatteredBuildMethod(INDUSTRY_ID) {
         }
 
         // Try build
-        if (GSIndustryType.BuildIndustry(INDUSTRY_ID, TILE_ID) == true) return 1;
+        if (GSIndustryType.BuildIndustry(industry_id, TILE_ID) == true) return 1;
 
         // Increment and check counter
         BUILD_TRIES--
@@ -571,21 +568,21 @@ Helper functions
  */
 
 // Custom get closest industry function
-function IndustryConstructor::GetClosestIndustry(TILE) {
+function IndustryConstructor::GetClosestIndustry(tile_id) {
     // Create a list of all industries
-    local IND_LIST = GSIndustryList();
+    local ind_list = GSIndustryList();
 
     // If count is 0, return null
-    if(IND_LIST.Count() == 0) return null;
+    if(ind_list.Count() == 0) return null;
 
     // Valuate by distance from tile
-    IND_LIST.Valuate(GSIndustry.GetDistanceManhattanToTile, TILE);
+    ind_list.Valuate(GSIndustry.GetDistanceManhattanToTile, tile_id);
 
     // Sort smallest to largest
-    IND_LIST.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    ind_list.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
 
     // Return the top one
-    return IND_LIST.Begin();
+    return ind_list.Begin();
 }
 
 // Min/Max X/Y list function, returns a 4 tile list with X Max, X Min, Y Max, Y Min, or blank list on fail.
@@ -597,7 +594,7 @@ function IndustryConstructor::ListMinMaxXY(tile_list, two_tile) {
     local_list.Valuate(GSMap.IsValidTile);
     local_list.KeepValue(1);
 
-    if local_list.IsEmpty() {
+    if(local_list.IsEmpty()) {
         return null;
     }
 
