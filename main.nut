@@ -247,7 +247,7 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
     foreach(ind_id in tertiaryindustry_list) {
         Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
     }
-    Print("Registration done.")
+    Print("-----Registration done.-----")
 }
 
 // Initialization function
@@ -428,14 +428,12 @@ function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
     switch(terrain_class) {
     case "Water":
         foreach(tile_id, value in tile_list) {
-            Print("Water");
             if(water_tiles.HasItem(tile_id)) {
                 filtered_list.AddTile(tile_id);
             };
         }
         break;
     case "Shore":
-        Print("Shore");
         foreach(tile_id, value in tile_list) {
             if(shore_tiles.HasItem(tile_id)) {
                 filtered_list.AddTile(tile_id);
@@ -448,7 +446,6 @@ function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
     case "Nonsnow":
     case "Nonsnowdesert":
     case "Default":
-        Print("Default");
         foreach(tile_id, value in tile_list) {
             if(land_tiles.HasItem(tile_id)) {
                 filtered_list.AddTile(tile_id);
@@ -477,7 +474,6 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     local eligible_tiles = GetEligibleTownTiles(town_id);
     // Exclude eligible tiles based on industry class:
     eligible_tiles = FilterToTerrain(eligible_tiles, terrain_class);
-    Print(GSTown.GetName(town_id));
     DiagnosticTileMap(eligible_tiles);
     // For each tile in the town tile list, try to build in one of them randomly
     // - Maintain spacing as given by config file
