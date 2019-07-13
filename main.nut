@@ -584,7 +584,9 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     // - Two checks at the end:
     //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
     //    - Check if the town we just built in now no longer has any eligible tiles
-    while(eligible_tiles.Count() > 0) {
+    while(eligible_tiles.Count() > 0 && stopper < 5) { // The stopper is because of a wierd rate limiter
+        stopper++;
+        Sleep(5);
         // Pull a random tile
         local attempt_tile = RandomAccessGSList(eligible_tiles);
         eligible_tiles.RemoveItem(attempt_tile);
