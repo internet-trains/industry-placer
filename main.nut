@@ -58,14 +58,24 @@ class IndustryConstructor extends GSController {
 
     chunk_size = 256; // Change this if Valuate runs out of CPU time
 
-
+    // Tile lists
     land_tiles = GSTileList();
     shore_tiles = GSTileList();
     water_tiles = GSTileList();
-    eligible_towns = GSTownList();
+    nondesert_tiles = GSTileList();
+    nonsnow_tiles = GSTileList();
+
     town_tiles = GSTileList();
 
-    town_industry_counts = GSList();
+    // Town eligibility lists: 1 for eligible in that category, 0 else
+    town_eligibility_default = GSTownList();
+    town_eligibility_water = GSTownList();
+    town_eligibility_shore = GSTownList();
+    town_eligibility_townbldg = GSTownList();
+    town_eligibility_neartown = GSTownList();
+    town_eligibility_nondesert = GSTownList();
+    town_eligibility_nonsnow = GSTownList();
+    town_eligibility_nonsnowdesert = GSTownList();
 
     cluster_node_ids = [];
 
@@ -255,11 +265,16 @@ function IndustryConstructor::Init() {
     RegisterIndustryGRF(industry_newgrf);
     MapPreprocess();
 
-    // Rework this -- town eligibility is now more complicated
-    eligible_towns = GSTownList();
-    foreach(town_id, value in eligible_towns) {
-        town_industry_counts.AddItem(town_id, 0);
-    }
+    // Town eligibility statuses
+    town_eligibility_default.Valuate(Id)
+    town_eligibility_water.Valuate(Id);
+    town_eligibility_shore.Valuate(Id);
+    town_eligibility_townbldg.Valuate(Id);
+    town_eligibility_neartown.Valuate(Id);
+    town_eligibility_nondesert.Valuate(Id);
+    town_eligibility_nonsnow.Valuate(Id);
+    town_eligibility_nonsnowdesert.Valuate(Id);
+
     while(true) {
         test_counter++;
         TownBuildMethod(2);
@@ -290,6 +305,8 @@ function IndustryConstructor::MapPreprocess() {
             local chunk_land = GetChunk(x, y);
             local chunk_shore = GetChunk(x, y);
             local chunk_water = GetChunk(x, y);
+            local chunk_nondesert = GSTileList();
+            local chunk_nonsnow = GSTileList();
             chunk_land.Valuate(GSTile.IsCoastTile);
             chunk_land.KeepValue(0);
             chunk_land.Valuate(GSTile.IsWaterTile);
@@ -298,9 +315,17 @@ function IndustryConstructor::MapPreprocess() {
             chunk_shore.KeepValue(1);
             chunk_water.Valuate(GSTile.IsWaterTile);
             chunk_water.KeepValue(1);
+            chunk_nondesert.AddList(chunk_land);
+            chunk_nondesert.Valuate(GSTile.IsDesertTile);
+            chunk_nondesert.KeepValue(0);
+            chunk_nonsnow.AddList(chunk_land);
+            chunk_nonsnow.Valuate(GSTile.IsSnowTile);
+            chunk_nonsnow.KeepValue(0);
             land_tiles.AddList(chunk_land);
             shore_tiles.AddList(chunk_shore);
             water_tiles.AddList(chunk_water);
+            nondesert_tiles.AddList(chunk_nondesert);
+            nonsnow_tiles.AddList(chunk_nonsnow);
             if(progress.Increment()) {
                 Print(progress);
             }
@@ -310,6 +335,8 @@ function IndustryConstructor::MapPreprocess() {
     Print("Land tile list size: " + land_tiles.Count());
     Print("Shore tile list size: " + shore_tiles.Count());
     Print("Water tile list size: " + water_tiles.Count());
+    Print("Nondesert tile list size: " + nondesert_tiles.Count());
+    Print("Nonsnow tile list size: " + nonsnow_tiles.Count());
 }
 
 // Returns the map chunk with x, y in the upper left corner
@@ -375,15 +402,46 @@ function IndustryConstructor::RectangleAroundTile(tile_id, radius) {
 }
 
 // Fetch eligible tiles belonging to the town with the given ID
-function IndustryConstructor::GetEligibleTownTiles(town_id) {
-    if(!eligible_towns.HasItem(town_id)) {
-        return null;
-    }
+function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
     local local_town_tiles = RectangleAroundTile(GSTown.GetLocation(town_id), town_radius);
-    // now do a comparison between tiles in town_tiles and eligible_town_tiles
+    // now do a comparison between local town tiles and the terrain lists
     local local_eligible_tiles = GSTileList();
+    local terrain_tiles = GSTileList();
+    switch(terrain_class) {
+    case "Water":
+        terrain_tiles.AddList(water_tiles);
+        break;
+    case "Shore":
+        terrain_tiles.AddList(shore_tiles);
+        break;
+    case "TownBldg":
+        // ?
+        break;
+    case "NearTown":
+        // ?
+        break;
+    case "Nondesert":
+        terrain_tiles.AddList(nondesert_tiles);
+        break;
+    case "Nonsnow":
+        terrain_tiles.AddList(nonsnow_tiles);
+        break;
+    case "Nonsnowdesert":
+        foreach(tile_id, value in nonsnow_tiles) {
+            if(nondesert_tiles.HasItem(tile_id)) {
+                terrain_tiles.AddItem(tile_id, value);
+            }
+        }
+        break;
+    case "Default":
+        terrain_tiles.AddList(land_tiles);
+        foreach(tile_id, value in terrain_tiles){} // WTF IS THIS
+        break;
+    case "All":
+        return local_town_tiles;
+    }
     foreach(tile_id, value in local_town_tiles) {
-        if(local_town_tiles.HasItem(tile_id)) {
+        if(terrain_tiles.HasItem(tile_id)) {
             local_eligible_tiles.AddItem(tile_id, value);
         }
     }
@@ -453,25 +511,62 @@ function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
     return filtered_list;
 }
 
+function IndustryConstructor::GetEligibleTowns(terrain_class) {
+    local town_list = GSTownList();
+    switch(terrain_class) {
+    case "Water":
+        town_list = town_eligibility_water;
+        break;
+    case "Shore":
+        town_list = town_eligibility_shore;
+        break;
+    case "TownBldg":
+        town_list = town_eligibility_townbldg;
+        break
+    case "NearTown":
+        town_list = town_eligibility_neartown;
+        break
+    case "Nondesert":
+        town_list = town_eligibility_nondesert;
+        break
+    case "Nonsnow":
+        town_list = town_eligibility_nonsnow;
+        break
+    case "Nonsnowdesert":
+        town_list = town_eligibility_nonsnowdesert;
+        break
+    case "Default":
+        town_list = town_eligibility_default;
+        break
+    }
+    town_list.KeepValue(1);
+    return town_list;
+}
+
 // Town build method function
 // return 1 if built and 0 if not
-// TODO: town industry limits per-town; drop from eligibility once enough industries have been built in a town
-// Also drop the tiles from the eligible tiles list
-
 // Big issue: town eligibility is really eligibility by class -- we can exhaust all the shore tiles of a town, but still be able to build industries on land near the town. How to handle?
 function IndustryConstructor::TownBuildMethod(industry_id) {
-    // Check if the list is not empty -- should this be handled before this function is called?
-    if(eligible_towns.IsEmpty() == true) {
-        Print("No more eligible towns!");
-        return 0;
-    }
+    local stopper = 0;
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
+    local eligible_towns = GetEligibleTowns(terrain_class);
+    Print(eligible_towns.Count());
+    if(eligible_towns.IsEmpty() == true) {
+        Print("No more eligible " + terrain_class + " towns!");
+        return 0;
+    }
     local town_id = RandomAccessGSList(eligible_towns);
-    local eligible_tiles = GetEligibleTownTiles(town_id);
+    local eligible_tiles = GetEligibleTownTiles(town_id, terrain_class);
+    Print("Attempting " + ind_name + " in " + GSTown.GetName(town_id));
+
+    if(eligible_tiles.Count() == 0) {
+        Print("Exhausted " + terrain_class + " in " + GSTown.GetName(town_id));
+        DropTown(town_id, terrain_class);
+        return 0;
+    }
     // Exclude eligible tiles based on industry class:
-    eligible_tiles = FilterToTerrain(eligible_tiles, terrain_class);
-    DiagnosticTileMap(eligible_tiles);
+    //DiagnosticTileMap(eligible_tiles);
     // For each tile in the town tile list, try to build in one of them randomly
     // - Maintain spacing as given by config file
     // - Once built, remove the tile ID from the global eligible tile list
@@ -484,10 +579,6 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
         eligible_tiles.RemoveItem(attempt_tile);
         ClearTile(attempt_tile);
         local build_success = GSIndustryType.BuildIndustry(industry_id, attempt_tile);
-        // Check if town has any eligible tiles left in it and remove from global eligible town list if not
-        if(GetEligibleTownTiles(town_id).Count() == 0) {
-            eligible_towns.RemoveItem(town_id);
-        }
         if(build_success) {
             Print("Founded " + ind_name + " in " + GSTown.GetName(town_id));
             // Check town industry limit (TK) and remove town from global eligible town list if so
@@ -495,7 +586,7 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
             town_industry_counts.SetValue(town_id, town_current_industries);
             if(town_current_industries == town_industry_limit) {
                 // Remove town from eligible list AND remove its tiles from the eligible tiles list
-                foreach(tile_id, value in GetEligibleTownTiles(town_id)) {
+                foreach(tile_id, value in GetEligibleTownTiles(town_id, "All")) {
                     ClearTile(tile_id);
                 }
                 eligible_towns.RemoveItem(town_id);
@@ -506,6 +597,35 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     Print(GSTown.GetName(town_id) + " exhausted.");
     // Tiles exhausted, return
     return 0;
+}
+
+function IndustryConstructor::DropTown(town_id, terrain_class) {
+    switch(terrain_class) {
+    case "Water":
+        town_eligibility_water.SetValue(town_id, 0);
+        break;
+    case "Shore":
+        town_eligibility_shore.SetValue(town_id, 0);
+        break;
+    case "TownBldg":
+        town_eligibility_townbldg.SetValue(town_id, 0);
+        break;
+    case "NearTown":
+        town_eligibility_neartown.SetValue(town_id, 0);
+        break;
+    case "Nondesert":
+        town_eligibility_nondesert.SetValue(town_id, 0);
+        break;
+    case "Nonsnow":
+        town_eligibility_nonsnow.SetValue(town_id, 0);
+        break;
+    case "Nonsnowdesert":
+        town_eligibility_nonsnowdesert.SetValue(town_id, 0);
+        break;
+    case "Default":
+        town_eligibility_default.SetValue(town_id, 0);
+        break;
+    }
 }
 
 function IndustryConstructor::RandomAccessGSList(gslist) {
@@ -525,6 +645,8 @@ function IndustryConstructor::ClearTile(tile_id) {
     land_tiles.RemoveItem(tile_id);
     shore_tiles.RemoveItem(tile_id);
     water_tiles.RemoveItem(tile_id);
+    nondesert_tiles.RemoveItem(tile_id);
+    nonsnow_tiles.RemoveItem(tile_id);
     town_tiles.RemoveItem(tile_id);
 }
 
