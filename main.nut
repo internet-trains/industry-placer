@@ -261,6 +261,16 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
     Print("-----Registration done.-----")
 }
 
+// Zero
+function IndustryConstructor::Zero(x) {
+    return 0;
+}
+
+// Identity
+function IndustryConstructor::Id(x) {
+    return 1;
+}
+
 // Initialization function
 function IndustryConstructor::Init() {
     RegisterIndustryGRF(industry_newgrf);
