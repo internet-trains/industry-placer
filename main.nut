@@ -52,11 +52,12 @@ SpiralWalker <- MinchinWeb.SpiralWalker;
 class IndustryConstructor extends GSController {
     test_counter = 0;
     build_limit = 0;
-    town_industry_limit = 4; // set in config
-    town_radius = 15; // set in config
+    town_industry_limit = 5; // set in config
+    town_radius = 20; // set in config
     industry_newgrf = "North American FIRS"; //set in config
 
     chunk_size = 256; // Change this if Valuate runs out of CPU time
+    town_industry_counts = GSTownList();
 
     // Tile lists
     land_tiles = GSTileList();
@@ -275,15 +276,13 @@ function IndustryConstructor::Init() {
     town_eligibility_nonsnow.Valuate(Id);
     town_eligibility_nonsnowdesert.Valuate(Id);
 
+    town_industry_counts.Valuate(Zero);
     while(true) {
-        test_counter++;
-        TownBuildMethod(2);
+        //TownBuildMethod(2);
         //DiagnosticTileMap(eligible_town_tiles);
-        //Print("---");
-        Print(test_counter);
+        //Print(test_counter);
+        TownBuildMethod(GSBase.RandRange(65));
     }
-    **/
-
 }
 
 // Map preprocessor
