@@ -392,7 +392,9 @@ function IndustryConstructor::DiagnosticTileMap(tilelist) {
     }
     GSController.Sleep(1);
     foreach(sign_id, value in GSSignList()) {
-        GSSign.RemoveSign(sign_id);
+        if(GSSign.GetName(sign_id) == ".") {
+            GSSign.RemoveSign(sign_id);
+        }
     }
 }
 
