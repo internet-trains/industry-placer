@@ -126,7 +126,7 @@ class IndustryConstructor extends GSController {
 
 // Save function
 function IndustryConstructor::Save() {
-    return null;
+    return {};
 }
 
 // Load function
