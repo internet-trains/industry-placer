@@ -320,9 +320,13 @@ function IndustryConstructor::MapPreprocess() {
             chunk_land.KeepValue(0);
             chunk_land.Valuate(GSTile.IsWaterTile);
             chunk_land.KeepValue(0);
+            chunk_land.Valuate(IsFlatTile);
+            chunk_land.KeepValue(1);
             chunk_shore.Valuate(GSTile.IsCoastTile);
             chunk_shore.KeepValue(1);
             chunk_water.Valuate(GSTile.IsWaterTile);
+            chunk_water.KeepValue(1);
+            chunk_water.Valuate(IsFlatTile);
             chunk_water.KeepValue(1);
             chunk_nondesert.AddList(chunk_land);
             chunk_nondesert.Valuate(GSTile.IsDesertTile);
@@ -346,6 +350,9 @@ function IndustryConstructor::MapPreprocess() {
     Print("Water tile list size: " + water_tiles.Count());
     Print("Nondesert tile list size: " + nondesert_tiles.Count());
     Print("Nonsnow tile list size: " + nonsnow_tiles.Count());
+
+function IndustryConstructor::IsFlatTile(tile_id) {
+    return GSTile.GetSlope(tile_id) == GSTile.SLOPE_FLAT;
 }
 
 // Returns the map chunk with x, y in the upper left corner
