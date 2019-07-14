@@ -81,7 +81,12 @@ class IndustryConstructor extends GSController {
     town_eligibility_nonsnow = GSTownList();
     town_eligibility_nonsnowdesert = GSTownList();
 
-    cluster_node_ids = [];
+    // Cluster parameters
+    confirmed_cluster_list = GSTileList();
+    confirmed_cluster_footprints = GSTileList();
+    cluster_radius = 10;
+    cluster_footprint_size_req = 4; // How many alias points the cluster footprint should hit.
+    cluster_point_limit = 1000;
 
     ind_type_count = 0; // count of industries in this.ind_type_list, set in industryconstructor.init.
     cargo_paxid = 0; // passenger cargo id, set in industryconstructor.init.
@@ -290,16 +295,17 @@ function IndustryConstructor::Init() {
     town_eligibility_nonsnowdesert.Valuate(Id);
 
     town_industry_counts.Valuate(Zero);
+    Sleep(100);
+    PrepareClusterMap();
     while(true) {
-        //TownBuildMethod(2);
-        //DiagnosticTileMap(eligible_town_tiles);
-        //Print(test_counter);
-        TownBuildMethod(GSBase.RandRange(65));
+        
     }
 }
 
+
 // Map preprocessor
 // Creates data for all tiles on the map
+
 function IndustryConstructor::MapPreprocess() {
     Print("Building map tile list.");
     local all_tiles = GSTileList();
@@ -693,122 +699,152 @@ function IndustryConstructor::ClearTile(tile_id) {
     town_tiles.RemoveItem(tile_id);
 }
 
-// Cluster build method function (2), return 1 if built and 0 if not
-function IndustryConstructor::ClusterBuildMethod(INDUSTRY_ID) {
+function IndustryConstructor::PrepareClusterMap() {
+    // Preprocessing for cluster step.
+    // Build up a list of valid cluster centers (equivalently, cluster footprints)
+    // We should proceed from most restricted terrain type to most general
+    // since more restrictive terrain types can be used for general industries
+    // Nonsnow nondesert
+    // Nonsnow
+    // Nondesert
+    // Generic
+    // Water (special case?)
 
-    // Variables
-    local IND_NAME = GSIndustryType.GetName(INDUSTRY_ID);            // Industry name string
-    local LIST_VALUE = 0; // The point on the list surrently, to synchronise between lists
-    local NODE_TILE = null;
-    local MULTI = 0;
-    local IND = null;
-    local IND_DIST = 0;
+    // More properly, we should build cluster maps using the smallest lists going to the largest
+    // Let's just TBD that...
 
-
-    // Loop until suitable node
-    while(SEARCH_TRIES > 0 && NODEGOT == false) {
-        // Increment and check counter
-        SEARCH_TRIES--
-        if(SEARCH_TRIES == 0) {
-            Log.Error("IndustryConstructor.ClusterBuildMethod: Couldn't find a valid tile to set node on!", Log.LVL_INFO)
-            return 0
-        }
-        // Get a random tile
-        NODE_TILE = Tile.GetRandomTile();
-
-        // Is buildable
-        if(GSTile.IsBuildable(NODE_TILE) == false) continue;
+    // Step 1. Draw a random tile from the list
+    // Check two things:
+    // a. Tile distances to towns, cities, etc.
+    // b. The size of the footprint were we to use this as the home node.
+    // If both checks pass, add it to the list of cluster 'centers'. Otherwise remove tile from eligibility.
+    // Step 2. Clear the footprint of the added tile from all tile lists
+    // Stop when either we run out of tiles or we have enough clusters
+    // Enough clusters = # of primary industries * # of clusters for each primary industry
 
 
-        // Check dist from edge
+    // Once we have our cluster homes/footprints we assign industries to them
+    // Start with the most restricted class of industry and move up from there
+    // If we still have available footprints once the # of clusters for each primary industry is satisfied,
+    // just push the remainders into the next, less restrictive stack.
 
-        // Check dist from town
+    // We can do a more aggressive version of the existing optimization to check only odd X, Y coordinate tiles
+    // Because a cluster has to have a certain 'size' to it
+    Print("Identifying cluster locations:");
+    // 1. Nondesert, nonsnow
+    local points_added = BuildClusterPoints("Nonsnowdesert");
+    Print(points_added + " nondesert, nonsnow clusters.");
+    // 2. Nondesert
+    points_added = BuildClusterPoints("Nondesert");
+    Print(points_added + " nondesert clusters.");
+    // 3. Nonsnow
+    points_added = BuildClusterPoints("Nonsnow");
+    Print(points_added + " nonsnow clusters.");
+    // 4. Regular land (i.e. all other terrain)
+    points_added = BuildClusterPoints("Default");
+    Print(points_added + " generic land clusters.");
+    // 5. Water (special case?)
+    points_added = BuildClusterPoints("Water");
+    Print(points_added + " water clusters.");
+}
 
-        //Check dist from ind
-        // - Get industry
-        IND = this.GetClosestIndustry(NODE_TILE);
-        // - If not null (null - no indusrties)
-        if(IND != null) {
-            // - Get distance
-            IND_DIST = GSIndustry.GetDistanceManhattanToTile(IND,NODE_TILE);
-            // - If less than minimum, re loop
-            if(IND_DIST < (GSController.GetSetting("CLUSTER_MIN_IND") * MULTI)) continue;
-        }
-
-        // Check dist from other clusters
-        NODEMATCH = false;
-        // - Check if node list has entries
-        if (CLUSTERNODE_LIST_IND.len() > 0) {
-        //    // - Loop through node list
-            for(local i = 0; i < CLUSTERTILE_LIST.len(); i++) {
-        //        // - If below min dist, then set match and end
-                if(GSTile.GetDistanceManhattanToTile(NODE_TILE,CLUSTERTILE_LIST[i]) < GSController.GetSetting("CLUSTER_MIN_NODE")) {
-                    NODEMATCH = true;
-                    break;
-                }
-            }
-        }
-        // - Check if match, and continue if true
-        if(NODEMATCH == true) continue;
-    //    Log.Info("node fine", Log.LVL_INFO)
-
-        // Add to node list
-        CLUSTERNODE_LIST_IND.push(INDUSTRY_ID);
-        CLUSTERNODE_LIST_COUNT.push(0);
-        CLUSTERTILE_LIST.push(NODE_TILE);
-        LIST_VALUE = CLUSTERTILE_LIST.len() - 1;
-        NODEGOT = true;
+function IndustryConstructor::BuildClusterPoints(terrain_class) {
+    local potential_cluster_list = GSTileList();
+    potential_cluster_list.AddList(alias_tiles);
+    potential_cluster_list.RemoveList(confirmed_cluster_footprints);
+    switch(terrain_class) {
+    case "Water":
+        potential_cluster_list.KeepList(water_tiles);
+        break;
+    case "Nondesert":
+        potential_cluster_list.KeepList(nondesert_tiles);
+        break;
+    case "Nonsnow":
+        potential_cluster_list.KeepList(nonsnow_tiles);
+        break;
+    case "Nonsnowdesert":
+        potential_cluster_list.KeepList(nondesert_tiles);
+        potential_cluster_list.KeepList(nonsnow_tiles);
+        break;
+    case "Default":
+        potential_cluster_list.KeepList(land_tiles);
+        break;
     }
-    // Get tile to build industry on
-    local TILE_ID = null;
-    // Build tries defines the area to build on, and the first try is the first node. Therefore the tries should be the square of
-    // the max distance parameter times the number of industries.
-    local BUILD_TRIES = (GSController.GetSetting("CLUSTER_RADIUS_MAX") * GSController.GetSetting("CLUSTER_RADIUS_MAX") * GSController.GetSetting("CLUSTER_NODES")).tointeger();
-    //Log.Info("Build tries: " + BUILD_TRIES, Log.LVL_INFO)
-    // - Create spiral walker
-    local SPIRAL_WALKER = SpiralWalker();
+    local points_added = 0;
+    local progress = ProgressReport(potential_cluster_list.Count());
+    while(potential_cluster_list.Count() > 0 && points_added <= cluster_point_limit) {
+        points_added += FindCluster(potential_cluster_list, terrain_class);
+        if(progress.Increment()) {
+            Print(progress);
+        }
+    }
+    return points_added;
+}
+// Check that the tile is sufficiently far from towns
+// Two conditions:
+// 1. Far enough from all 'big' towns.
+// 2. Far enough from any town.
+function IndustryConstructor::CloseToTown(tile_id) {
+
+}
+
+function IndustryConstructor::FindCluster(tile_list, terrain_class) {
+    local test_tile = RandomAccessGSList(tile_list);
+    tile_list.RemoveItem(test_tile);
+    // Check that it is sufficiently far from all towns
+    if(CloseToTown(test_tile)) {
+        return 0;
+    }
+    local footprint = GetFootprint(test_tile, tile_list, cluster_radius);
+    local terrain_value = -1;
+    switch(terrain_class) {
+    case "Water":
+        terrain_value = 0;
+        break;
+    case "Nondesert":
+        terrain_value = 1;
+        break;
+    case "Nonsnow":
+        terrain_value = 2;
+        break;
+    case "Nonsnowdesert":
+        terrain_value = 3;
+        break;
+    case "Default":
+        terrain_value = 4;
+        break;
+    }
+    if(footprint.Count() > cluster_footprint_size_req) {
+        confirmed_cluster_list.AddItem(test_tile, terrain_value);
+        tile_list.RemoveList(footprint);
+        confirmed_cluster_footprints.AddList(footprint);
+        return 1;
+    }
+    return 0;
+}
+
+// Scans a radius around a tile for the number of tiles in the tile list around a given tile
+function IndustryConstructor::GetFootprint(tile_id, tile_list, radius) {
+    local footprint = RectangleAroundTile(tile_id, radius);
+    footprint.KeepList(tile_list)
+    return footprint;
+}
+
+// Cluster build method function, return # of industries built
+function IndustryConstructor::ClusterBuildMethod(industry_id) {
+    local ind_name = GSIndustryType.GetName(industry_id);
+    local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
+
+    // Q: does the rate limiter strike if we have two different zones?
+    // Get tile to center cluster on
+    local tile1 = GSMap.GetTileIndex(32, 32);
+    local tile2 = GSMap.GetTileIndex(96, 96);
+    local spiral1 = SpiralWalker();
+    local spiral2 = SpiralWalker();
     // - Set spiral walker on node tile
-    SPIRAL_WALKER.Start(NODE_TILE);
-    // Debug sign
-    if(GSGameSettings.GetValue("log_level") >= 4) GSSign.BuildSign(NODE_TILE,"Node tile: " + GSIndustryType.GetName (INDUSTRY_ID));
+    spiral1.Start(tile1);
+    spiral2.Start(tile2);
 
-    // Loop till built
-    while(BUILD_TRIES > 0) {
-
-        // Walk one tile
-        SPIRAL_WALKER.Walk();
-        // Get tile
-        TILE_ID = SPIRAL_WALKER.GetTile();
-
-        // Check dist from ind
-        // - Get industry
-        IND = this.GetClosestIndustry(TILE_ID);
-        // - If not null (null - no indusrties)
-        if(IND != null) {
-            // - Get distance
-            IND_DIST = GSIndustry.GetDistanceManhattanToTile(IND,TILE_ID);
-            // - If less than minimum, re loop
-            if(IND_DIST < (GSController.GetSetting("CLUSTER_RADIUS_MIN") * MULTI)) continue;
-            // - If more than maximum, re loop
-            //if(IND_DIST > (GSController.GetSetting("CLUSTER_RADIUS_MAX") * MULTI)) continue;
-        }
-
-        // Try build
-        if (GSIndustryType.BuildIndustry(INDUSTRY_ID, TILE_ID) == true) {
-            CLUSTERNODE_LIST_COUNT[LIST_VALUE]++
-            return 1;
-        }
-
-        // Increment and check counter
-        BUILD_TRIES--
-        if(BUILD_TRIES == ((256 * 256 * 2.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == ((256 * 256 * 1.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == ((256 * 256 * 0.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == 0) {
-            Log.Error("IndustryConstructor.ClusterBuildMethod: Couldn't find a valid tile to build on!", Log.LVL_INFO)
-        }
-    }
-    Log.Error("IndustryConstructor.ClusterBuildMethod: Build failed!", Log.LVL_INFO)
     return 0;
 }
 
