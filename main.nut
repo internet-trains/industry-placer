@@ -59,6 +59,9 @@ class IndustryConstructor extends GSController {
     chunk_size = 256; // Change this if Valuate runs out of CPU time
     town_industry_counts = GSTownList();
 
+    // Map mask
+    alias_tiles = GSTileList();
+
     // Tile lists
     land_tiles = GSTileList();
     shore_tiles = GSTileList();
@@ -314,6 +317,7 @@ function IndustryConstructor::MapPreprocess() {
             local chunk_land = GetChunk(x, y);
             local chunk_shore = GetChunk(x, y);
             local chunk_water = GetChunk(x, y);
+            local chunk_alias = GetChunk(x, y);
             local chunk_nondesert = GSTileList();
             local chunk_nonsnow = GSTileList();
             chunk_land.Valuate(GSTile.IsCoastTile);
@@ -334,11 +338,16 @@ function IndustryConstructor::MapPreprocess() {
             chunk_nonsnow.AddList(chunk_land);
             chunk_nonsnow.Valuate(GSTile.IsSnowTile);
             chunk_nonsnow.KeepValue(0);
+            chunk_alias.Valuate(TileAliasX);
+            chunk_alias.KeepValue(0);
+            chunk_alias.Valuate(TileAliasY);
+            chunk_alias.KeepValue(0);
             land_tiles.AddList(chunk_land);
             shore_tiles.AddList(chunk_shore);
             water_tiles.AddList(chunk_water);
             nondesert_tiles.AddList(chunk_nondesert);
             nonsnow_tiles.AddList(chunk_nonsnow);
+            alias_tiles.AddList(chunk_alias);
             if(progress.Increment()) {
                 Print(progress);
             }
@@ -350,6 +359,18 @@ function IndustryConstructor::MapPreprocess() {
     Print("Water tile list size: " + water_tiles.Count());
     Print("Nondesert tile list size: " + nondesert_tiles.Count());
     Print("Nonsnow tile list size: " + nonsnow_tiles.Count());
+    Print("Alias mask size: " + alias_tiles.Count());
+}
+
+function IndustryConstructor::TileAliasX(tile_id) {
+    local tile_x = GSMap.GetTileX(tile_id);
+    return tile_x % 13;
+}
+
+function IndustryConstructor::TileAliasY(tile_id) {
+    local tile_y = GSMap.GetTileY(tile_id);
+    return tile_y % 13;
+}
 
 function IndustryConstructor::IsFlatTile(tile_id) {
     return GSTile.GetSlope(tile_id) == GSTile.SLOPE_FLAT;
