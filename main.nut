@@ -393,14 +393,16 @@ function IndustryConstructor::BuildEligibleTownTiles() {
 }
 
 // Paints on the map all tiles in a given list
-function IndustryConstructor::DiagnosticTileMap(tilelist) {
+function IndustryConstructor::DiagnosticTileMap(tilelist, persist = false) {
     foreach(tile_id, value in tilelist) {
         GSSign.BuildSign(tile_id, ".");
     }
     GSController.Sleep(1);
-    foreach(sign_id, value in GSSignList()) {
-        if(GSSign.GetName(sign_id) == ".") {
-            GSSign.RemoveSign(sign_id);
+    if(!persist) {
+        foreach(sign_id, value in GSSignList()) {
+            if(GSSign.GetName(sign_id) == ".") {
+                GSSign.RemoveSign(sign_id);
+            }
         }
     }
 }
