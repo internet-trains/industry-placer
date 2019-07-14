@@ -567,7 +567,6 @@ function IndustryConstructor::GetEligibleTowns(terrain_class) {
 // return 1 if built and 0 if not
 // Big issue: town eligibility is really eligibility by class -- we can exhaust all the shore tiles of a town, but still be able to build industries on land near the town. How to handle?
 function IndustryConstructor::TownBuildMethod(industry_id) {
-    local stopper = 0;
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local eligible_towns = GetEligibleTowns(terrain_class);
@@ -593,6 +592,7 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     // - Two checks at the end:
     //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
     //    - Check if the town we just built in now no longer has any eligible tiles
+    local stopper = 0;
     while(eligible_tiles.Count() > 0 && stopper < 5) { // The stopper is because of a wierd rate limiter
         stopper++;
         Sleep(5);
