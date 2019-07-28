@@ -720,20 +720,89 @@ function IndustryConstructor::GetFootprint(tile_id, tile_list, radius) {
 
 // Cluster build method function, return # of industries built
 function IndustryConstructor::ClusterBuildMethod(industry_id) {
+    // Strategy
+    // Get industry terrain class
+    // Draw a tile at random from the intersection of cluster_eligible_tiles and the appropriate terrain class list
+    // This tile is the cluster home tile
+    // Attempt to site a cluster -- is there a zone of eligible tiles of large enough size around the cluster home?
+    // If not, drop from cluster_eligible_tiles and try again
+    // If so: drop from cluster_eligible_tiles and use the cluster site as a tile list
+    // Building the cluster: try tiles at random in the cluster site and attempt to build an industry similar to town build method
+    // Return the number of industries successfully built
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
+    local cluster_eligible_tiles = GetEligibleClusterTiles(terrain_class);
+    local cluster_acceptable = false;
+    local cluster_zone = GSTileList();
+    Print("Seeking " + ind_name + " cluster zone");
+    while(!cluster_acceptable && cluster_eligible_tiles.Count() > 0) {
+        local cluster_home = SampleGSList(cluster_eligible_tiles);
+        cluster_eligible_tiles.RemoveItem(cluster_home);
+        ClusterClearTile(cluster_home);
 
-    // Q: does the rate limiter strike if we have two different zones?
-    // Get tile to center cluster on
-    local tile1 = GSMap.GetTileIndex(32, 32);
-    local tile2 = GSMap.GetTileIndex(96, 96);
-    local spiral1 = SpiralWalker();
-    local spiral2 = SpiralWalker();
-    // - Set spiral walker on node tile
-    spiral1.Start(tile1);
-    spiral2.Start(tile2);
+        cluster_zone = FilterToTerrain(RectangleAroundTile(cluster_home, cluster_radius), terrain_class);
+        // Accept zone?
+        cluster_acceptable = cluster_zone.Count() * 100 > cluster_occ_pct * (cluster_radius * cluster_radius - town_radius * town_radius);
+        if(cluster_acceptable) {
+            Print(ind_name + " cluster sited at " + "(" + GSMap.GetTileX(cluster_home) + ", " + GSMap.GetTileY(cluster_home) + ")");
+                // Now we have a cluster_zone with tiles of possible industry sites
+                // Remove all tiles in cluster_zone from future cluster home eligibility
+            foreach(tile_id, value in RectangleAroundTile(cluster_home, cluster_radius + cluster_spacing)) {
+                ClusterClearTile(tile_id);
+            }
+        }
+    }
 
-    return 0;
+    // Either the cluster is acceptable OR we ran out of cluster home tiles
+    if(cluster_eligible_tiles.IsEmpty()) {
+        Print("Unable to site cluster for terrain type " + terrain_class);
+        return -1;
+    }
+    local built_industries = 0;
+
+    // Now we just spam industry builds until we've built to cluster_limit or tiles run out
+    while(cluster_zone.Count() > 0 && built_industries < cluster_industry_limit) {
+        local attempt_tile = SampleGSList(cluster_zone);
+        // We remove this tile from both the tile lists and also possible cluster home lists
+        cluster_zone.RemoveItem(attempt_tile);
+        ClearTile(attempt_tile);
+        ClusterClearTile(attempt_tile);
+        local build_success = Build(industry_id, attempt_tile);
+        if(build_success) {
+            local industry_footprint = RectangleAroundTile(attempt_tile, industry_spacing);
+            foreach(tile_id, value in industry_footprint) {
+                cluster_zone.RemoveItem(tile_id);
+                ClearTile(tile_id);
+                ClusterClearTile(tile_id);
+            }
+        }
+        built_industries += build_success ? 1 : 0;
+    }
+    Print("Built " + built_industries + " " + ind_name);
+    return built_industries;
+}
+
+function IndustryConstructor::ClusterClearTile(tile_id) {
+    cluster_eligibility_water.RemoveItem(tile_id);
+    cluster_eligibility_nondesert.RemoveItem(tile_id);
+    cluster_eligibility_nonsnow.RemoveItem(tile_id);
+    cluster_eligibility_nonsnowdesert.RemoveItem(tile_id);
+    cluster_eligibility_land.RemoveItem(tile_id);
+}
+
+function IndustryConstructor::GetEligibleClusterTiles(terrain_class) {
+    switch(terrain_class) {
+    case "Water":
+        return cluster_eligibility_water;
+    case "Nondesert":
+        return cluster_eligibility_nondesert;
+    case "Nonsnow":
+        return cluster_eligibility_nonsnow;
+    case "Nonsnowdesert":
+        return cluster_eligibility_nonsnowdesert;
+    case "Default":
+        return cluster_eligibility_land;
+    }
 }
 
 function IndustryConstructor::ScatteredBuildMethod(industry_id) {
