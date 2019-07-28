@@ -261,7 +261,6 @@ function IndustryConstructor::Init() {
     RegisterIndustryGRF(industry_newgrf);
     MapPreprocess();
 
-    // Town eligibility statuses
 function IndustryConstructor::FillCash() {
     if(GSCompany.GetBankBalance(company_id) < 20000000) {
         GSCompany.ChangeBankBalance(company_id, 1000000000, GSCompany.EXPENSES_OTHER);
@@ -827,4 +826,6 @@ function IndustryConstructor::Print(string) {
     Log.Info((GSDate.GetSystemTime() % 3600) + " " + string, Log.LVL_INFO);
 }
 
+function IndustryConstructor::Save() {
+    return {};
 }
