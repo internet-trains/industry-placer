@@ -289,6 +289,8 @@ function IndustryConstructor::Build(industry_id, tile_index) {
     }
     return GSIndustryType.BuildIndustry(industry_id, tile_index);
 }
+
+function IndustryConstructor::InitializeTowns() {
     town_eligibility_default.Valuate(Id)
     town_eligibility_water.Valuate(Id);
     town_eligibility_shore.Valuate(Id);
