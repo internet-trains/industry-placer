@@ -6,28 +6,24 @@
 // 3. Extend script to handle more uses cases -- don't hardcode cargo types
 // 4. Reference appropriate documentation for game API calls
 
-import("util.superlib", "SuperLib", 36);
-Log <- SuperLib.Log;
 require("progress.nut");
 
-class IndustryConstructor extends GSController {
-    test_counter = 0;
-    // Config set variables
-    town_industry_limit = 5; // How many industries max per town (not including cluster industries)
-    town_radius = 20; // How far away to consider a tile part of a town
-    town_long_radius = 70; // The zone from town_radius to town_cluster_distance will be the 'outer' zone where cluster industries are available
-    cluster_radius = 20; // Cluster footprint size
-    cluster_occ_pct = 80; // Percent cutoff for cluster footprint availability. Bump this up if you see a lot of clusters that are 'undersized'.
-    cluster_industry_limit = 10;
-    cluster_spacing = 30; // Min. spacing between clusters
-    industry_spacing = 9; // Min. spacing between industries
-    industry_newgrf = "North American FIRS";
-    large_town_cutoff = 1200; // how big a town needs to be before it is ineligible for clusters
-    large_town_spacing = 100; // how far clusters have to be from large towns, above
-    farm_spacing = 20;
-    raw_industry_min = 5;
-    proc_industry_min = 5;
-    tertiary_industry_min = 5;
+class IndustryPlacer extends GSController {
+    town_industry_limit = 0;
+    town_radius = 0;
+    town_long_radius = 0;
+    cluster_radius = 0;
+    cluster_occ_pct = 0;
+    cluster_industry_limit = 0;
+    cluster_spacing = 0;
+    industry_spacing = 0;
+    industry_newgrf = 0;
+    large_town_cutoff = 0;
+    large_town_spacing = 0;
+    farm_spacing = 0;
+    raw_industry_min = 0;
+    proc_industry_min = 0;
+    tertiary_industry_min = 0;
 
     // End config set variables
     company_id = 0;
@@ -82,25 +78,40 @@ class IndustryConstructor extends GSController {
                              "Nonsnow",
                              "Nonsnowdesert"];
     constructor() {
+        this.town_industry_limit = GSController.GetSetting("town_industry_limit");
+        this.town_radius = GSController.GetSetting("town_radius");
+        this.town_long_radius = GSController.GetSetting("town_long_radius");
+        this.cluster_radius = GSController.GetSetting("cluster_radius");
+        this.cluster_occ_pct = GSController.GetSetting("cluster_occ_pct");
+        this.cluster_industry_limit = GSController.GetSetting("cluster_industry_limit");
+        this.cluster_spacing = GSController.GetSetting("cluster_spacing");
+        this.industry_spacing = GSController.GetSetting("industry_spacing");
+        this.industry_newgrf = GSController.GetSetting("industry_newgrf");
+        this.large_town_cutoff = GSController.GetSetting("large_town_cutoff");
+        this.large_town_spacing = GSController.GetSetting("large_town_spacing");
+        this.farm_spacing = GSController.GetSetting("farm_spacing");
+        this.raw_industry_min = GSController.GetSetting("raw_industry_min");
+        this.proc_industry_min = GSController.GetSetting("proc_industry_min");
+        this.tertiary_industry_min = GSController.GetSetting("tertiary_industry_min");
     }
 }
 
 // Save function
-function IndustryConstructor::Save() {
+function IndustryPlacer::Save() {
     return {};
 }
 
 // Load function
-function IndustryConstructor::Load() {
+function IndustryPlacer::Load() {
 }
 
 // Program start function
-function IndustryConstructor::Start() {
+function IndustryPlacer::Start() {
     this.Init();
     //this.BuildIndustry();
 }
 
-function IndustryConstructor::InArray(item, array) {
+function IndustryPlacer::InArray(item, array) {
     for(local i = 0; i < array.len(); i++) {
         if(array[i] == item) {
             return true;
@@ -109,7 +120,16 @@ function IndustryConstructor::InArray(item, array) {
     return false;
 }
 
-function IndustryConstructor::RegisterIndustryGRF(name) {
+function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
+    local name = "";
+    switch(industry_newgrf) {
+    case 1:
+        name = "North American FIRS";
+        break;
+    case 0:
+        name = "Default";
+        break;
+    }
     Print("Registering " + name + " industries.");
     local water_based_industries = [];
     local shore_based_industries = [];
@@ -132,6 +152,17 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
     local tertiary_override = [];
     local farm_override = [];
 
+    if(name == "Default") {
+        water_based_industries = [
+                                  "Oil Rig"
+                                  ];
+        townbldg_based_industries = [
+                                     "Bank"
+                                     ];
+        farm_override = [
+                         "Farm"
+                         ];
+    }
     if(name == "North American FIRS") {
         water_based_industries = [
                                   "Oil Rig",
@@ -245,17 +276,17 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
 }
 
 // Zero
-function IndustryConstructor::Zero(x) {
+function IndustryPlacer::Zero(x) {
     return 0;
 }
 
 // Identity
-function IndustryConstructor::Id(x) {
+function IndustryPlacer::Id(x) {
     return 1;
 }
 
 // Initialization function
-function IndustryConstructor::Init() {
+function IndustryPlacer::Init() {
     Sleep(1);
     company_id = GSCompany.ResolveCompanyID(GSCompany.COMPANY_FIRST);
     RegisterIndustryGRF(industry_newgrf);
@@ -298,13 +329,13 @@ function IndustryConstructor::Init() {
     FillFarms();
 }
 
-function IndustryConstructor::FillCash() {
+function IndustryPlacer::FillCash() {
     if(GSCompany.GetBankBalance(company_id) < 20000000) {
         GSCompany.ChangeBankBalance(company_id, 1000000000, GSCompany.EXPENSES_OTHER);
     }
 }
 
-function IndustryConstructor::Build(industry_id, tile_index) {
+function IndustryPlacer::Build(industry_id, tile_index) {
     FillCash();
     local mode = GSCompanyMode(company_id);
     local build_status = false;
@@ -326,7 +357,7 @@ function IndustryConstructor::Build(industry_id, tile_index) {
     return GSIndustryType.BuildIndustry(industry_id, tile_index);
 }
 
-function IndustryConstructor::InitializeTowns() {
+function IndustryPlacer::InitializeTowns() {
     town_eligibility_default.Valuate(Id)
     town_eligibility_water.Valuate(Id);
     town_eligibility_shore.Valuate(Id);
@@ -338,7 +369,7 @@ function IndustryConstructor::InitializeTowns() {
     town_industry_counts.Valuate(Zero);
 }
 
-function IndustryConstructor::InitializeClusterMap() {
+function IndustryPlacer::InitializeClusterMap() {
     cluster_eligibility_water.AddList(outer_town_tiles);
     cluster_eligibility_water.KeepList(water_tiles);
     cluster_eligibility_nondesert.AddList(outer_town_tiles);
@@ -356,7 +387,7 @@ function IndustryConstructor::InitializeClusterMap() {
 // Map preprocessor
 // Creates data for all tiles on the map
 
-function IndustryConstructor::MapPreprocess() {
+function IndustryPlacer::MapPreprocess() {
     Print("Building map tile list.");
     local all_tiles = GSTileList();
     all_tiles.AddRectangle(GSMap.GetTileIndex(1, 1),
@@ -413,13 +444,13 @@ function IndustryConstructor::MapPreprocess() {
     Print("Outer town tile list size: " + outer_town_tiles.Count());
 }
 
-function IndustryConstructor::IsFlatTile(tile_id) {
+function IndustryPlacer::IsFlatTile(tile_id) {
     return GSTile.GetSlope(tile_id) == GSTile.SLOPE_FLAT;
 }
 
 // Returns the map chunk with x, y in the upper left corner
 // i.e. GetChunk(1, 1) will give you (1, 1) to (257, 257)
-function IndustryConstructor::GetChunk(x, y) {
+function IndustryPlacer::GetChunk(x, y) {
     local chunk = GSTileList();
     chunk.AddRectangle(GSMap.GetTileIndex(x, y),
                        GSMap.GetTileIndex(min(x + 256, GSMap.GetMapSizeX() - 2),
@@ -428,7 +459,7 @@ function IndustryConstructor::GetChunk(x, y) {
 }
 
 // Go through each town and identify every valid tile_id (do we have a way to ID the town of a tile?)
-function IndustryConstructor::BuildEligibleTownTiles() {
+function IndustryPlacer::BuildEligibleTownTiles() {
     /*
     1. get every town
     2. get every tile in every town
@@ -468,7 +499,7 @@ function IndustryConstructor::BuildEligibleTownTiles() {
 }
 
 // Paints on the map all tiles in a given list
-function IndustryConstructor::DiagnosticTileMap(tilelist, persist = false) {
+function IndustryPlacer::DiagnosticTileMap(tilelist, persist = false) {
     foreach(tile_id, value in tilelist) {
         GSSign.BuildSign(tile_id, ".");
     }
@@ -482,7 +513,7 @@ function IndustryConstructor::DiagnosticTileMap(tilelist, persist = false) {
     }
 }
 
-function IndustryConstructor::RectangleAroundTile(tile_id, radius) {
+function IndustryPlacer::RectangleAroundTile(tile_id, radius) {
     local tile_x = GSMap.GetTileX(tile_id);
     local tile_y = GSMap.GetTileY(tile_id);
     local from_x = min(max(tile_x - radius, 1), GSMap.GetMapSizeX() - 2);
@@ -497,7 +528,7 @@ function IndustryConstructor::RectangleAroundTile(tile_id, radius) {
 }
 
 // Fetch eligible tiles belonging to the town with the given ID
-function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
+function IndustryPlacer::GetEligibleTownTiles(town_id, terrain_class) {
     local local_town_tiles = RectangleAroundTile(GSTown.GetLocation(town_id), town_radius);
     // now do a comparison between local town tiles and the terrain lists
     local local_eligible_tiles = GSTileList();
@@ -541,7 +572,7 @@ function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
 }
 
 // Given a tile list, filter to only tiles of that terrain class
-function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
+function IndustryPlacer::FilterToTerrain(tile_list, terrain_class) {
     local filtered_list = GSTileList();
     foreach(tile_id, value in tile_list) {
         switch(terrain_class) {
@@ -589,7 +620,7 @@ function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
     return filtered_list;
 }
 
-function IndustryConstructor::GetEligibleTowns(terrain_class) {
+function IndustryPlacer::GetEligibleTowns(terrain_class) {
     local town_list = GSTownList();
     switch(terrain_class) {
     case "Water":
@@ -624,7 +655,7 @@ function IndustryConstructor::GetEligibleTowns(terrain_class) {
 // Town build method function
 // return 1 if built and 0 if not
 // Big issue: town eligibility is really eligibility by class -- we can exhaust all the shore tiles of a town, but still be able to build industries on land near the town. How to handle?
-function IndustryConstructor::TownBuildMethod(industry_id) {
+function IndustryPlacer::TownBuildMethod(industry_id) {
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local eligible_towns = GetEligibleTowns(terrain_class);
@@ -674,7 +705,7 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     return 0;
 }
 
-function IndustryConstructor::DropTown(town_id, terrain_class) {
+function IndustryPlacer::DropTown(town_id, terrain_class) {
     switch(terrain_class) {
     case "Water":
         town_eligibility_water.SetValue(town_id, 0);
@@ -703,7 +734,7 @@ function IndustryConstructor::DropTown(town_id, terrain_class) {
     }
 }
 
-function IndustryConstructor::SampleGSList(gslist) {
+function IndustryPlacer::SampleGSList(gslist) {
     if(gslist.Count() == 0) {
         return -1;
     }
@@ -719,7 +750,7 @@ function IndustryConstructor::SampleGSList(gslist) {
 // So when we remove a tile from eligibility, we should remove them from all of these lists
 // Be sure to come back and update this if new information layers are added
 // This is a TILE ID based function
-function IndustryConstructor::ClearTile(tile_id) {
+function IndustryPlacer::ClearTile(tile_id) {
     land_tiles.RemoveItem(tile_id);
     shore_tiles.RemoveItem(tile_id);
     water_tiles.RemoveItem(tile_id);
@@ -735,7 +766,7 @@ function IndustryConstructor::ClearTile(tile_id) {
 // Two conditions:
 // 1. Far enough from all 'big' towns.
 // 2. Far enough from any town.
-function IndustryConstructor::FarFromTown(tile_id) {
+function IndustryPlacer::FarFromTown(tile_id) {
     local nearestTown = GSTile.GetClosestTown(tile_id);
     local population = GSTown.GetPopulation(nearestTown);
     local nearestTownLocation = GSTown.GetLocation(nearestTown);
@@ -749,14 +780,14 @@ function IndustryConstructor::FarFromTown(tile_id) {
 }
 
 // Scans a radius around a tile for the number of tiles in the tile list around a given tile
-function IndustryConstructor::GetFootprint(tile_id, tile_list, radius) {
+function IndustryPlacer::GetFootprint(tile_id, tile_list, radius) {
     local footprint = RectangleAroundTile(tile_id, radius);
     footprint.KeepList(tile_list)
     return footprint;
 }
 
 // Cluster build method function, return # of industries built
-function IndustryConstructor::ClusterBuildMethod(industry_id) {
+function IndustryPlacer::ClusterBuildMethod(industry_id) {
     // Strategy
     // Get industry terrain class
     // Draw a tile at random from the intersection of cluster_eligible_tiles and the appropriate terrain class list
@@ -819,7 +850,7 @@ function IndustryConstructor::ClusterBuildMethod(industry_id) {
     return built_industries;
 }
 
-function IndustryConstructor::ClusterClearTile(tile_id) {
+function IndustryPlacer::ClusterClearTile(tile_id) {
     cluster_eligibility_water.RemoveItem(tile_id);
     cluster_eligibility_nondesert.RemoveItem(tile_id);
     cluster_eligibility_nonsnow.RemoveItem(tile_id);
@@ -827,7 +858,7 @@ function IndustryConstructor::ClusterClearTile(tile_id) {
     cluster_eligibility_land.RemoveItem(tile_id);
 }
 
-function IndustryConstructor::GetEligibleClusterTiles(terrain_class) {
+function IndustryPlacer::GetEligibleClusterTiles(terrain_class) {
     switch(terrain_class) {
     case "Water":
         return cluster_eligibility_water;
@@ -842,7 +873,7 @@ function IndustryConstructor::GetEligibleClusterTiles(terrain_class) {
     }
 }
 
-function IndustryConstructor::ScatteredBuildMethod(industry_id) {
+function IndustryPlacer::ScatteredBuildMethod(industry_id) {
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local terrain_tiles = GSList();
@@ -888,7 +919,7 @@ function IndustryConstructor::ScatteredBuildMethod(industry_id) {
     return build_success ? 1 : 0;
 }
 
-function IndustryConstructor::FillFarms() {
+function IndustryPlacer::FillFarms() {
     Print("Filling in farmland.");
     while(outer_town_tiles.Count() > 0) {
         local industry_id = farmindustry_list[GSBase.RandRange(farmindustry_list.len())];
@@ -909,7 +940,7 @@ Helper functions
  */
 
 // Custom get closest industry function
-function IndustryConstructor::GetClosestIndustry(tile_id) {
+function IndustryPlacer::GetClosestIndustry(tile_id) {
     // Create a list of all industries
     local ind_list = GSIndustryList();
 
@@ -928,7 +959,7 @@ function IndustryConstructor::GetClosestIndustry(tile_id) {
 
 // Min/Max X/Y list function, returns a 4 tile list with X Max, X Min, Y Max, Y Min, or blank list on fail.
 // If second param is == true, returns a 2 tile list with XY Min and XY Max, or blank list on fail.
-function IndustryConstructor::ListMinMaxXY(tile_list, two_tile) {
+function IndustryPlacer::ListMinMaxXY(tile_list, two_tile) {
     // Squirrel is pass-by-reference
     local local_list = GSList();
     local_list.AddList(tile_list);
@@ -977,7 +1008,7 @@ function GetTownDistFromEdge(town_id) {
 }
 
 // Given a tile, returns true if the nearest industry is further away than TOWN_MIND_IND
-function IndustryConstructor::FarFromIndustry(tile_id) {
+function IndustryPlacer::FarFromIndustry(tile_id) {
     local nearest_industry_tile = this.GetClosestIndustry(tile_id);
     if(nearest_industry_tile == null) {
         return true; // null case - no industries on map
@@ -986,10 +1017,10 @@ function IndustryConstructor::FarFromIndustry(tile_id) {
     return ind_distance > (GSController.GetSetting("TOWN_MIN_IND"));
 }
 
-function IndustryConstructor::Print(string) {
-    Log.Info((GSDate.GetSystemTime() % 3600) + " " + string, Log.LVL_INFO);
+function IndustryPlacer::Print(string) {
+    GSController.Print(false, (GSDate.GetSystemTime() % 3600) + " " + string);
 }
 
-function IndustryConstructor::Save() {
+function IndustryPlacer::Save() {
     return {};
 }
