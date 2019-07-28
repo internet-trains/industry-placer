@@ -118,6 +118,7 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
     local nondesert_based_industries = [];
     local nonsnow_based_industries = [];
     local nonsnowdesert_based_industries = [];
+    local farm_industries = [];
     // Overrides are for industries that we want to force into a tier
     /*
      * From the API docs:
@@ -129,10 +130,12 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
     local primary_override = [];
     local secondary_override = [];
     local tertiary_override = [];
+    local farm_override = [];
+
     if(name == "North American FIRS") {
         water_based_industries = [
                                   "Oil Rig",
-                                  "Fishing Site",
+                                  "Fishing Grounds",
                                   "Dredging Site"
                                   ];
         shore_based_industries = [
@@ -162,8 +165,13 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
                                           "Mixed Farm"
                                           ];
         tertiary_override = [
-                             "Mint"
+                             "Mint",
+                             "Smithy Forge"
                              ];
+        farm_override = [
+                         "Arable Farm",
+                         "Mixed Farm"
+                         ];
     }
     if(name == "FIRS Complex") {
         //tk
@@ -201,7 +209,9 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
         local ind_name = GSIndustryType.GetName(ind_id);
         // We have to descend down these if else statements in order
         // Otherwise the overrides don't work
-        if(InArray(ind_name, primary_override)) {
+        if(InArray(ind_name, farm_override)) {
+            farmindustry_list.push(ind_id);
+        } else if(InArray(ind_name, primary_override)) {
             rawindustry_list.push(ind_id);
         } else if(InArray(ind_name, secondary_override)) {
             procindustry_list.push(ind_id);
@@ -225,6 +235,10 @@ function IndustryConstructor::RegisterIndustryGRF(name) {
     }
     Print("-----Tertiary industries:-----");
     foreach(ind_id in tertiaryindustry_list) {
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+    }
+    Print("-----Farm industries:-----");
+    foreach(ind_id in farmindustry_list) {
         Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
     }
     Print("-----Registration done.-----")
