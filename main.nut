@@ -486,11 +486,8 @@ function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
         terrain_tiles.AddList(nonsnow_tiles);
         break;
     case "Nonsnowdesert":
-        foreach(tile_id, value in nonsnow_tiles) {
-            if(nondesert_tiles.HasItem(tile_id)) {
-                terrain_tiles.AddItem(tile_id, value);
-            }
-        }
+        terrain_tiles.AddList(nonsnow_tiles);
+        terrain_tiles.KeepList(nondesert_tiles);
         break;
     case "Default":
         terrain_tiles.AddList(land_tiles);
