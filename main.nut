@@ -301,11 +301,6 @@ function IndustryConstructor::InitializeTowns() {
     town_eligibility_nonsnowdesert.Valuate(Id);
 
     town_industry_counts.Valuate(Zero);
-    Sleep(100);
-    PrepareClusterMap();
-    while(true) {
-        
-    }
 }
 
 
