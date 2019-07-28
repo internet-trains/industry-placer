@@ -299,8 +299,21 @@ function IndustryConstructor::InitializeTowns() {
     town_eligibility_nondesert.Valuate(Id);
     town_eligibility_nonsnow.Valuate(Id);
     town_eligibility_nonsnowdesert.Valuate(Id);
-
     town_industry_counts.Valuate(Zero);
+}
+
+function IndustryConstructor::InitializeClusterMap() {
+    cluster_eligibility_water.AddList(outer_town_tiles);
+    cluster_eligibility_water.KeepList(water_tiles);
+    cluster_eligibility_nondesert.AddList(outer_town_tiles);
+    cluster_eligibility_nondesert.KeepList(nondesert_tiles);
+    cluster_eligibility_nonsnow.AddList(outer_town_tiles);
+    cluster_eligibility_nonsnow.KeepList(nonsnow_tiles);
+    cluster_eligibility_nonsnowdesert.AddList(outer_town_tiles);
+    cluster_eligibility_nonsnowdesert.KeepList(nondesert_tiles);
+    cluster_eligibility_nonsnowdesert.KeepList(nonsnow_tiles);
+    cluster_eligibility_land.AddList(outer_town_tiles);
+    cluster_eligibility_land.KeepList(land_tiles);
 }
 
 
@@ -344,27 +357,24 @@ function IndustryConstructor::MapPreprocess() {
             chunk_nonsnow.AddList(chunk_land);
             chunk_nonsnow.Valuate(GSTile.IsSnowTile);
             chunk_nonsnow.KeepValue(0);
-            chunk_alias.Valuate(TileAliasX);
-            chunk_alias.KeepValue(0);
-            chunk_alias.Valuate(TileAliasY);
-            chunk_alias.KeepValue(0);
             land_tiles.AddList(chunk_land);
             shore_tiles.AddList(chunk_shore);
             water_tiles.AddList(chunk_water);
             nondesert_tiles.AddList(chunk_nondesert);
             nonsnow_tiles.AddList(chunk_nonsnow);
-            alias_tiles.AddList(chunk_alias);
             if(progress.Increment()) {
                 Print(progress);
             }
         }
     }
-    town_tiles = BuildEligibleTownTiles();
+    BuildEligibleTownTiles();
     Print("Land tile list size: " + land_tiles.Count());
     Print("Shore tile list size: " + shore_tiles.Count());
     Print("Water tile list size: " + water_tiles.Count());
     Print("Nondesert tile list size: " + nondesert_tiles.Count());
     Print("Nonsnow tile list size: " + nonsnow_tiles.Count());
+    Print("Town tile list size: " + town_tiles.Count());
+    Print("Outer town tile list size: " + outer_town_tiles.Count());
 }
 
 function IndustryConstructor::IsFlatTile(tile_id) {
@@ -391,21 +401,34 @@ function IndustryConstructor::BuildEligibleTownTiles() {
     Print("Building town tile list.");
     local town_list = GSTownList();
     town_list.Valuate(GSTown.GetLocation);
-    local all_town_tiles = GSTileList();
     local progress = ProgressReport(town_list.Count());
     foreach(town_id, tile_id in town_list) {
+        core_town_tiles.AddList(RectangleAroundTile(tile_id, 4));
         local local_town_tiles = RectangleAroundTile(tile_id, town_radius);
-        foreach(tile, value in local_town_tiles) {
-            if(!all_town_tiles.HasItem(tile)) {
-                all_town_tiles.AddTile(tile);
+        local distant_town_tiles = RectangleAroundTile(tile_id, town_long_radius);
+
+        foreach(tile, value in distant_town_tiles) {
+            if(local_town_tiles.HasItem(tile)) {
+                outer_town_tiles.RemoveItem(tile);
+                if(!town_tiles.HasItem(tile)) {
+                    town_tiles.AddItem(tile, value);
+                }
+            } else {
+                if(!outer_town_tiles.HasItem(tile) && !town_tiles.HasItem(tile)) {
+                    outer_town_tiles.AddItem(tile, value);
+                }
             }
         }
         if(progress.Increment()) {
             Print(progress);
         }
     }
-    Print("Town tile list size: " + all_town_tiles.Count());
-    return all_town_tiles;
+    // Cull all outer town tiles that 'splashed' into nearby towns
+    foreach(tile, value in outer_town_tiles) {
+        if(town_tiles.HasItem(tile)) {
+            outer_town_tiles.RemoveItem(tile);
+        }
+    }
 }
 
 // Paints on the map all tiles in a given list
@@ -451,10 +474,10 @@ function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
         terrain_tiles.AddList(shore_tiles);
         break;
     case "TownBldg":
-        // ?
+        terrain_tiles.AddList(core_town_tiles);
         break;
     case "NearTown":
-        // ?
+        terrain_tiles.AddList(town_tiles);
         break;
     case "Nondesert":
         terrain_tiles.AddList(nondesert_tiles);
@@ -657,6 +680,8 @@ function IndustryConstructor::ClearTile(tile_id) {
     nondesert_tiles.RemoveItem(tile_id);
     nonsnow_tiles.RemoveItem(tile_id);
     town_tiles.RemoveItem(tile_id);
+    outer_town_tiles.RemoveItem(tile_id);
+    core_town_tiles.RemoveItem(tile_id);
 }
 
 
