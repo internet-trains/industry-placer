@@ -698,9 +698,12 @@ function IndustryConstructor::ClearTile(tile_id) {
 // Two conditions:
 // 1. Far enough from all 'big' towns.
 // 2. Far enough from any town.
-function IndustryConstructor::CloseToTown(tile_id) {
+function IndustryConstructor::FarFromTown(tile_id) {
+    local nearestTown = GSTile.GetClosestTown(tile_id);
+    local population = GSTown.GetPopulation(nearestTown);
+    local nearestTownLocation = GSTown.GetLocation(nearestTown);
+    local distanceToTown = GSTile.GetDistanceSquareToTile(tile_id, nearestTownLocation);
 
-}
     // Checking nearest like this can have an issue in the pathological case
     // where the nearest town is small and it's 1 tile closer than the second-nearest town
     // A. nearest town small, slightly further town big - behavior is to accept cluster construction (incorrectly)
