@@ -507,33 +507,48 @@ function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
 // Given a tile list, filter to only tiles of that terrain class
 function IndustryConstructor::FilterToTerrain(tile_list, terrain_class) {
     local filtered_list = GSTileList();
-    switch(terrain_class) {
-    case "Water":
-        foreach(tile_id, value in tile_list) {
+    foreach(tile_id, value in tile_list) {
+        switch(terrain_class) {
+        case "Water":
             if(water_tiles.HasItem(tile_id)) {
                 filtered_list.AddTile(tile_id);
             };
-        }
-        break;
-    case "Shore":
-        foreach(tile_id, value in tile_list) {
+            break;
+        case "Shore":
             if(shore_tiles.HasItem(tile_id)) {
                 filtered_list.AddTile(tile_id);
             }
-        }
-        break;
-    case "TownBldg":
-    case "NearTown":
-    case "Nondesert":
-    case "Nonsnow":
-    case "Nonsnowdesert":
-    case "Default":
-        foreach(tile_id, value in tile_list) {
+            break;
+        case "TownBldg":
+            if(core_town_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+        case "NearTown":
+            if(town_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+            break;
+        case "Nondesert":
+            if(nondesert_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+            break;
+        case "Nonsnow":
+            if(nonsnow_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+            break;
+        case "Nonsnowdesert":
+            if(nonsnow_tiles.HasItem(tile_id) && nondesert_tiles.HasItem(tile_id)) {
+                filtered_list.AddTile(tile_id);
+            }
+            break;
+        case "Default":
             if(land_tiles.HasItem(tile_id)) {
                 filtered_list.AddTile(tile_id);
             }
+            break;
         }
-        break;
     }
     return filtered_list;
 }
