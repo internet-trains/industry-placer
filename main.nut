@@ -256,10 +256,39 @@ function IndustryConstructor::Id(x) {
 
 // Initialization function
 function IndustryConstructor::Init() {
+    Sleep(1);
+    company_id = GSCompany.ResolveCompanyID(GSCompany.COMPANY_FIRST);
     RegisterIndustryGRF(industry_newgrf);
     MapPreprocess();
 
     // Town eligibility statuses
+function IndustryConstructor::FillCash() {
+    if(GSCompany.GetBankBalance(company_id) < 20000000) {
+        GSCompany.ChangeBankBalance(company_id, 1000000000, GSCompany.EXPENSES_OTHER);
+    }
+}
+
+function IndustryConstructor::Build(industry_id, tile_index) {
+    FillCash();
+    local mode = GSCompanyMode(company_id);
+    local build_status = false;
+    // Shores are wierd. Industries are built from their top left corner; but a shore industry also has to touch land on one side
+    // Without better knowledge of geometry, we'll just spam build in a 6x6 region up and to the left of the desired tile
+    if(industry_classes.GetValue(industry_id) == 2) {
+        local top_corner = GSMap.GetTileIndex(max(GSMap.GetTileX(tile_index) - 6, 1),
+                                              max(GSMap.GetTileY(tile_index) - 6, 1));
+        local build_zone = GSTileList();
+        build_zone.AddRectangle(top_corner, tile_index);
+        foreach(tile_id, value in build_zone) {
+            build_status = GSIndustryType.BuildIndustry(industry_id, tile_id);
+            if(build_status) {
+                return build_status;
+            }
+        }
+        return false;
+    }
+    return GSIndustryType.BuildIndustry(industry_id, tile_index);
+}
     town_eligibility_default.Valuate(Id)
     town_eligibility_water.Valuate(Id);
     town_eligibility_shore.Valuate(Id);
