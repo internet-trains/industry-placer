@@ -737,7 +737,50 @@ function IndustryConstructor::ClusterBuildMethod(industry_id) {
 }
 
 function IndustryConstructor::ScatteredBuildMethod(industry_id) {
+    local ind_name = GSIndustryType.GetName(industry_id);
+    local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
+    local terrain_tiles = GSList();
+    Print("Attempting to build " + ind_name);
+    switch(terrain_class) {
+    case "Water":
+        terrain_tiles.AddList(water_tiles);
+        break;
+    case "Shore":
+        terrain_tiles.AddList(shore_tiles);
+        break;
+    case "NearTown":
+        terrain_tiles.AddList(town_tiles);
+        break;
+    case "Nondesert":
+        terrain_tiles.AddList(nondesert_tiles);
+        break;
+    case "Nonsnow":
+        terrain_tiles.AddList(nonsnow_tiles);
+        break;
+    case "Nonsnowdesert":
+        terrain_tiles.AddList(nondesert_tiles);
+        terrain_tiles.KeepList(nonsnow_tiles);
+        break;
+    case "Default":
+        terrain_tiles.AddList(land_tiles);
+        break;
+    }
+    if(terrain_tiles.Count() == 0) {
+        Print("Exhausted " + terrain_class + " tiles!");
+        return -1;
+    }
+    local attempt_tile = SampleGSList(terrain_tiles);
+    ClearTile(attempt_tile);
+    local build_success = Build(industry_id, attempt_tile);
+    if(build_success) {
+        local industry_footprint = RectangleAroundTile(attempt_tile, industry_spacing);
+        foreach(tile_id, value in industry_footprint) {
+            ClearTile(tile_id);
         }
+        Print("Built " + ind_name);
+    }
+    return build_success ? 1 : 0;
+}
 
         }
     }
