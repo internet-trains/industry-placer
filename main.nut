@@ -851,6 +851,18 @@ function IndustryConstructor::ScatteredBuildMethod(industry_id) {
     return build_success ? 1 : 0;
 }
 
+function IndustryConstructor::FillFarms() {
+    Print("Filling in farmland.");
+    while(outer_town_tiles.Count() > 0) {
+        local industry_id = farmindustry_list[GSBase.RandRange(farmindustry_list.len())];
+        local ind_name = GSIndustryType.GetName(industry_id);
+        local attempt_tile = SampleGSList(outer_town_tiles);
+        ClearTile(attempt_tile);
+        local build_success = Build(industry_id, attempt_tile);
+        if(build_success) {
+            foreach(tile_id, value in RectangleAroundTile(attempt_tile, farm_spacing)) {
+                ClearTile(tile_id);
+            }
         }
     }
 }
