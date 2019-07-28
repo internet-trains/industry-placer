@@ -1,20 +1,3 @@
-/*   This file is part of IndustryConstructor, which is a GameScript for OpenTTD
- *   Copyright (C) 2013  R2dical
- *
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU General Public License as published by
- *   the Free Software Foundation, either version 3 of the License, or
- *   (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *   GNU General Public License for more details.
- *
- *   You should have received a copy of the GNU General Public License
- *   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 // Objectives
 
 // 1. Maintain functionality but improve script performance
@@ -23,31 +6,9 @@
 // 3. Extend script to handle more uses cases -- don't hardcode cargo types
 // 4. Reference appropriate documentation for game API calls
 
-// Notes:
-// Log levels:
-//    static LVL_INFO = 1;           // main info. eg what it is doing
-//    static LVL_SUB_DECISIONS = 2;  // sub decisions - eg. reasons for not doing certain things etc.
-//    static LVL_DEBUG = 3;          // debug prints - debug prints during carrying out actions
-
-
-
-// Imports - wtf does this do
 import("util.superlib", "SuperLib", 36);
-Result <- SuperLib.Result;
 Log <- SuperLib.Log;
-Helper <- SuperLib.Helper;
-ScoreList <- SuperLib.ScoreList;
-Tile <- SuperLib.Tile;
-Direction <- SuperLib.Direction;
-Town <- SuperLib.Town;
-Industry <- SuperLib.Industry;
-
 require("progress.nut");
-
-import("util.MinchinWeb", "MinchinWeb", 6);
-SpiralWalker <- MinchinWeb.SpiralWalker;
-// https://www.tt-forums.net/viewtopic.php?f=65&t=57903
-// SpiralWalker - allows you to define a starting point and walks outward
 
 class IndustryConstructor extends GSController {
     test_counter = 0;
@@ -58,9 +19,6 @@ class IndustryConstructor extends GSController {
 
     chunk_size = 256; // Change this if Valuate runs out of CPU time
     town_industry_counts = GSTownList();
-
-    // Map mask
-    alias_tiles = GSTileList();
 
     // Tile lists
     land_tiles = GSTileList();
@@ -97,18 +55,6 @@ class IndustryConstructor extends GSController {
     procindustry_list_count = 0; // count of secondary industries, set in industryconstructor.init.
     tertiaryindustry_list = []; // array of tertiary industry type id's, set in industryconstructor.init.
     tertiaryindustry_list_count = 0; // count of tertiary industries, set in industryconstructor.init.
-
-    // user variables
-    density_ind_total = 0; // set from settings, in industryconstructor.init. total industries, integer always >= 1
-    density_ind_min = 0; // set from settings, in industryconstructor. init.min industry density %, float always < 1.
-    density_ind_max = 0; // set from settings, in industryconstructor.init. max industry density %, float always > 1.
-    density_raw_prop = 0; // set from settings, in industryconstructor.init. primary industry proportion, float always < 1.
-    density_proc_prop = 0; // set from settings, in industryconstructor.init. secondary industry proportion, float always < 1.
-    density_tert_prop = 0; // set from settings, in industryconstructor.init. tertiary industry proportion, float always < 1.
-    density_raw_method = 0; // set from settings, in industryconstructor.init.
-    density_proc_method = 0; // set from settings, in industryconstructor.init.
-    density_tert_method = 0; // set from settings, in industryconstructor.init.
-
     industry_classes = GSIndustryTypeList(); // Stores the build-type of industries
     industry_class_lookup = [
                              "Default",
@@ -119,7 +65,6 @@ class IndustryConstructor extends GSController {
                              "Nondesert",
                              "Nonsnow",
                              "Nonsnowdesert"];
-
     constructor() {
     }
 }
@@ -323,7 +268,6 @@ function IndustryConstructor::MapPreprocess() {
             local chunk_land = GetChunk(x, y);
             local chunk_shore = GetChunk(x, y);
             local chunk_water = GetChunk(x, y);
-            local chunk_alias = GetChunk(x, y);
             local chunk_nondesert = GSTileList();
             local chunk_nonsnow = GSTileList();
             chunk_land.Valuate(GSTile.IsCoastTile);
@@ -365,17 +309,6 @@ function IndustryConstructor::MapPreprocess() {
     Print("Water tile list size: " + water_tiles.Count());
     Print("Nondesert tile list size: " + nondesert_tiles.Count());
     Print("Nonsnow tile list size: " + nonsnow_tiles.Count());
-    Print("Alias mask size: " + alias_tiles.Count());
-}
-
-function IndustryConstructor::TileAliasX(tile_id) {
-    local tile_x = GSMap.GetTileX(tile_id);
-    return tile_x % 13;
-}
-
-function IndustryConstructor::TileAliasY(tile_id) {
-    local tile_y = GSMap.GetTileY(tile_id);
-    return tile_y % 13;
 }
 
 function IndustryConstructor::IsFlatTile(tile_id) {
@@ -493,35 +426,6 @@ function IndustryConstructor::GetEligibleTownTiles(town_id, terrain_class) {
         }
     }
     return local_eligible_tiles;
-}
-
-// Builds industries in the order of their IDs
-function IndustryConstructor::BuildIndustry() {
-    Print("Building industries:");
-
-    foreach(industry_id in GSIndustryTypeList) {
-        build_method = LookupIndustryBuildMethod(industry_id);
-        for(local i = 0; i < BUILD_TARGET; i++) {
-            // Build
-            switch(build_method) {
-                case 1:
-                    // Increment count using town build
-                    CURRENT_BUILD_COUNT += TownBuildMethod(CURRENT_IND_ID);
-                    break;
-                case 2:
-                    // Increment count using cluster build
-                    CURRENT_BUILD_COUNT += ClusterBuildMethod(CURRENT_IND_ID);
-                    break;
-                case 3:
-                    // Increment count using scatter build
-                    CURRENT_BUILD_COUNT += ScatteredBuildMethod(CURRENT_IND_ID);
-                    break;
-            this.ErrorHandler();
-            }
-            // Display status
-            Log.Info(" ~Built " + CURRENT_BUILD_COUNT + " / " + BUILD_TARGET, Log.LVL_SUB_DECISIONS);
-        }
-    }
 }
 
 // Given a tile list, filter to only tiles of that terrain class
@@ -699,87 +603,7 @@ function IndustryConstructor::ClearTile(tile_id) {
     town_tiles.RemoveItem(tile_id);
 }
 
-function IndustryConstructor::PrepareClusterMap() {
-    // Preprocessing for cluster step.
-    // Build up a list of valid cluster centers (equivalently, cluster footprints)
-    // We should proceed from most restricted terrain type to most general
-    // since more restrictive terrain types can be used for general industries
-    // Nonsnow nondesert
-    // Nonsnow
-    // Nondesert
-    // Generic
-    // Water (special case?)
 
-    // More properly, we should build cluster maps using the smallest lists going to the largest
-    // Let's just TBD that...
-
-    // Step 1. Draw a random tile from the list
-    // Check two things:
-    // a. Tile distances to towns, cities, etc.
-    // b. The size of the footprint were we to use this as the home node.
-    // If both checks pass, add it to the list of cluster 'centers'. Otherwise remove tile from eligibility.
-    // Step 2. Clear the footprint of the added tile from all tile lists
-    // Stop when either we run out of tiles or we have enough clusters
-    // Enough clusters = # of primary industries * # of clusters for each primary industry
-
-
-    // Once we have our cluster homes/footprints we assign industries to them
-    // Start with the most restricted class of industry and move up from there
-    // If we still have available footprints once the # of clusters for each primary industry is satisfied,
-    // just push the remainders into the next, less restrictive stack.
-
-    // We can do a more aggressive version of the existing optimization to check only odd X, Y coordinate tiles
-    // Because a cluster has to have a certain 'size' to it
-    Print("Identifying cluster locations:");
-    // 1. Nondesert, nonsnow
-    local points_added = BuildClusterPoints("Nonsnowdesert");
-    Print(points_added + " nondesert, nonsnow clusters.");
-    // 2. Nondesert
-    points_added = BuildClusterPoints("Nondesert");
-    Print(points_added + " nondesert clusters.");
-    // 3. Nonsnow
-    points_added = BuildClusterPoints("Nonsnow");
-    Print(points_added + " nonsnow clusters.");
-    // 4. Regular land (i.e. all other terrain)
-    points_added = BuildClusterPoints("Default");
-    Print(points_added + " generic land clusters.");
-    // 5. Water (special case?)
-    points_added = BuildClusterPoints("Water");
-    Print(points_added + " water clusters.");
-}
-
-function IndustryConstructor::BuildClusterPoints(terrain_class) {
-    local potential_cluster_list = GSTileList();
-    potential_cluster_list.AddList(alias_tiles);
-    potential_cluster_list.RemoveList(confirmed_cluster_footprints);
-    switch(terrain_class) {
-    case "Water":
-        potential_cluster_list.KeepList(water_tiles);
-        break;
-    case "Nondesert":
-        potential_cluster_list.KeepList(nondesert_tiles);
-        break;
-    case "Nonsnow":
-        potential_cluster_list.KeepList(nonsnow_tiles);
-        break;
-    case "Nonsnowdesert":
-        potential_cluster_list.KeepList(nondesert_tiles);
-        potential_cluster_list.KeepList(nonsnow_tiles);
-        break;
-    case "Default":
-        potential_cluster_list.KeepList(land_tiles);
-        break;
-    }
-    local points_added = 0;
-    local progress = ProgressReport(potential_cluster_list.Count());
-    while(potential_cluster_list.Count() > 0 && points_added <= cluster_point_limit) {
-        points_added += FindCluster(potential_cluster_list, terrain_class);
-        if(progress.Increment()) {
-            Print(progress);
-        }
-    }
-    return points_added;
-}
 // Check that the tile is sufficiently far from towns
 // Two conditions:
 // 1. Far enough from all 'big' towns.
@@ -787,40 +611,11 @@ function IndustryConstructor::BuildClusterPoints(terrain_class) {
 function IndustryConstructor::CloseToTown(tile_id) {
 
 }
-
-function IndustryConstructor::FindCluster(tile_list, terrain_class) {
-    local test_tile = RandomAccessGSList(tile_list);
-    tile_list.RemoveItem(test_tile);
-    // Check that it is sufficiently far from all towns
-    if(CloseToTown(test_tile)) {
-        return 0;
-    }
-    local footprint = GetFootprint(test_tile, tile_list, cluster_radius);
-    local terrain_value = -1;
-    switch(terrain_class) {
-    case "Water":
-        terrain_value = 0;
-        break;
-    case "Nondesert":
-        terrain_value = 1;
-        break;
-    case "Nonsnow":
-        terrain_value = 2;
-        break;
-    case "Nonsnowdesert":
-        terrain_value = 3;
-        break;
-    case "Default":
-        terrain_value = 4;
-        break;
-    }
-    if(footprint.Count() > cluster_footprint_size_req) {
-        confirmed_cluster_list.AddItem(test_tile, terrain_value);
-        tile_list.RemoveList(footprint);
-        confirmed_cluster_footprints.AddList(footprint);
-        return 1;
-    }
-    return 0;
+    // Checking nearest like this can have an issue in the pathological case
+    // where the nearest town is small and it's 1 tile closer than the second-nearest town
+    // A. nearest town small, slightly further town big - behavior is to accept cluster construction (incorrectly)
+    // B. nearest town big, slightly further town small - behavior is to reject cluster construction (correctly)
+    return (distanceToTown > large_town_spacing && population < large_town_cutoff);
 }
 
 // Scans a radius around a tile for the number of tiles in the tile list around a given tile
@@ -848,49 +643,11 @@ function IndustryConstructor::ClusterBuildMethod(industry_id) {
     return 0;
 }
 
-// Scattered build method function (3), return 1 if built and 0 if not
 function IndustryConstructor::ScatteredBuildMethod(industry_id) {
-    local TOWN_DIST = 0;
-    local IND = null;
-    local IND_DIST = 0;
-    local MULTI = 0;
-
-    // Loop until correct tile
-    while(BUILD_TRIES > 0) {
-        // Get a random tile
-        TILE_ID = Tile.GetRandomTile();
-
-        // Check dist from town
-        // - Get distance to town
-        TOWN_DIST = GSTown.GetDistanceManhattanToTile(GSTile.GetClosestTown(TILE_ID),TILE_ID);
-        // - If less than minimum, re loop
-        if(TOWN_DIST < (GSController.GetSetting("SCATTERED_MIN_TOWN") * MULTI)) continue;
-
-        // Check dist from ind
-        // - Get industry
-        IND = this.GetClosestIndustry(TILE_ID);
-        // - If not null (null - no indusrties)
-        if(IND != null) {
-            // - Get distance
-            IND_DIST = GSIndustry.GetDistanceManhattanToTile(IND,TILE_ID);
-            // - If less than minimum, re loop
-            if(IND_DIST < (GSController.GetSetting("SCATTERED_MIN_IND") * MULTI)) continue;
         }
 
-        // Try build
-        if (GSIndustryType.BuildIndustry(industry_id, TILE_ID) == true) return 1;
-
-        // Increment and check counter
-        BUILD_TRIES--
-        if(BUILD_TRIES == ((256 * 256 * 2.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == ((256 * 256 * 1.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == ((256 * 256 * 0.5) * MAP_SCALE).tointeger()) Log.Warning(" ~Tries left: " + BUILD_TRIES, Log.LVL_INFO);
-        if(BUILD_TRIES == 0) {
-            Log.Error("IndustryConstructor.ScatteredBuildMethod: Couldn't find a valid tile!", Log.LVL_INFO)
         }
     }
-    Log.Error("IndustryConstructor.ScatteredBuildMethod: Build failed!", Log.LVL_INFO)
-    return 0;
 }
 
 /*
@@ -979,28 +736,4 @@ function IndustryConstructor::Print(string) {
     Log.Info((GSDate.GetSystemTime() % 3600) + " " + string, Log.LVL_INFO);
 }
 
-/*
- * Given a list of tiles, expand to include 5 tiles in the 'north' and 'west' direction
- */
-function IndustryConstructor::AddBuffer(tile_list, buffer_x_neg, buffer_y_neg, buffer_x_pos, buffer_y_pos, debug = false) {
-    local buffer_list = GSTileList();
-    foreach(tile, value in tile_list) {
-        // Add not just the tile, but all tiles north and west by buffer amount
-        for(local y_offset = -buffer_y_pos; y_offset <= buffer_y_neg; y_offset++) {
-            for(local x_offset = -buffer_x_pos; x_offset <= buffer_x_neg; x_offset++) {
-                local candidate_x = GSMap.GetTileX(tile);
-                local candidate_y = GSMap.GetTileY(tile);
-                candidate_x = min(max(candidate_x + x_offset, 1), GSMap.GetMapSizeX() - 2);
-                candidate_y = min(max(candidate_y + y_offset, 1), GSMap.GetMapSizeY() - 2);
-                local candidate_tile = GSMap.GetTileIndex(candidate_x, candidate_y);
-                if(!buffer_list.HasItem(candidate_tile)) {
-                    buffer_list.AddTile(candidate_tile);
-                    if(debug) {
-                        GSSign.BuildSign(candidate_tile, ".");
-                    }
-                }
-            }
-        }
-    }
-    return buffer_list;
 }
