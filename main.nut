@@ -592,12 +592,11 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local eligible_towns = GetEligibleTowns(terrain_class);
-    Print(eligible_towns.Count());
     if(eligible_towns.IsEmpty() == true) {
         Print("No more eligible " + terrain_class + " towns!");
-        return 0;
+        return -1;
     }
-    local town_id = RandomAccessGSList(eligible_towns);
+    local town_id = SampleGSList(eligible_towns);
     local eligible_tiles = GetEligibleTownTiles(town_id, terrain_class);
     Print("Attempting " + ind_name + " in " + GSTown.GetName(town_id));
 
@@ -614,15 +613,11 @@ function IndustryConstructor::TownBuildMethod(industry_id) {
     // - Two checks at the end:
     //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
     //    - Check if the town we just built in now no longer has any eligible tiles
-    local stopper = 0;
-    while(eligible_tiles.Count() > 0 && stopper < 5) { // The stopper is because of a wierd rate limiter
-        stopper++;
-        Sleep(5);
-        // Pull a random tile
-        local attempt_tile = RandomAccessGSList(eligible_tiles);
+    while(eligible_tiles.Count() > 0) {
+        local attempt_tile = SampleGSList(eligible_tiles);
         eligible_tiles.RemoveItem(attempt_tile);
         ClearTile(attempt_tile);
-        local build_success = GSIndustryType.BuildIndustry(industry_id, attempt_tile);
+        local build_success = Build(industry_id, attempt_tile);
         if(build_success) {
             Print("Founded " + ind_name + " in " + GSTown.GetName(town_id));
             // Check town industry limit (TK) and remove town from global eligible town list if so
@@ -672,7 +667,10 @@ function IndustryConstructor::DropTown(town_id, terrain_class) {
     }
 }
 
-function IndustryConstructor::RandomAccessGSList(gslist) {
+function IndustryConstructor::SampleGSList(gslist) {
+    if(gslist.Count() == 0) {
+        return -1;
+    }
     local index = [];
     foreach(item, value in gslist) {
         index.push(item);
