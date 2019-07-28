@@ -260,6 +260,43 @@ function IndustryConstructor::Init() {
     company_id = GSCompany.ResolveCompanyID(GSCompany.COMPANY_FIRST);
     RegisterIndustryGRF(industry_newgrf);
     MapPreprocess();
+    InitializeTowns();
+    foreach(ind_id in tertiaryindustry_list) {
+        local build_counter = 0;
+        while(build_counter < tertiary_industry_min) {
+            local build = TownBuildMethod(ind_id);
+            if(build == -1) {
+                break;
+            } else {
+                build_counter += build;
+            }
+        }
+    }
+    InitializeClusterMap();
+    foreach(ind_id in rawindustry_list) {
+        local build_counter = 0;
+        while(build_counter < raw_industry_min) {
+            local build = ClusterBuildMethod(ind_id);
+            if(build == -1) {
+                break;
+            } else {
+                build_counter += build;
+            }
+        }
+    }
+    foreach(ind_id in procindustry_list) {
+        local build_counter = 0;
+        while(build_counter < proc_industry_min) {
+            local build = ScatteredBuildMethod(ind_id);
+            if(build == -1) {
+                break;
+            } else {
+                build_counter += build;
+            }
+        }
+    }
+    FillFarms();
+}
 
 function IndustryConstructor::FillCash() {
     if(GSCompany.GetBankBalance(company_id) < 20000000) {
