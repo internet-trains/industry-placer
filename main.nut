@@ -12,11 +12,26 @@ require("progress.nut");
 
 class IndustryConstructor extends GSController {
     test_counter = 0;
-    build_limit = 0;
-    town_industry_limit = 5; // set in config
-    town_radius = 20; // set in config
-    industry_newgrf = "North American FIRS"; //set in config
+    // Config set variables
+    town_industry_limit = 5; // How many industries max per town (not including cluster industries)
+    town_radius = 20; // How far away to consider a tile part of a town
+    town_long_radius = 70; // The zone from town_radius to town_cluster_distance will be the 'outer' zone where cluster industries are available
+    cluster_radius = 20; // Cluster footprint size
+    cluster_occ_pct = 80; // Percent cutoff for cluster footprint availability. Bump this up if you see a lot of clusters that are 'undersized'.
+    cluster_industry_limit = 10;
+    cluster_spacing = 30; // Min. spacing between clusters
+    industry_spacing = 9; // Min. spacing between industries
+    industry_newgrf = "North American FIRS";
+    large_town_cutoff = 1200; // how big a town needs to be before it is ineligible for clusters
+    large_town_spacing = 100; // how far clusters have to be from large towns, above
+    farm_spacing = 20;
+    raw_industry_min = 5;
+    proc_industry_min = 5;
+    tertiary_industry_min = 5;
 
+    // End config set variables
+    company_id = 0;
+    build_limit = 0;
     chunk_size = 256; // Change this if Valuate runs out of CPU time
     town_industry_counts = GSTownList();
 
@@ -26,10 +41,12 @@ class IndustryConstructor extends GSController {
     water_tiles = GSTileList();
     nondesert_tiles = GSTileList();
     nonsnow_tiles = GSTileList();
-
     town_tiles = GSTileList();
+    outer_town_tiles = GSTileList();
+    core_town_tiles = GSTileList();
 
     // Town eligibility lists: 1 for eligible in that category, 0 else
+    // A town is 'eligible' if any tiles in its influence are still available for industry construction
     town_eligibility_default = GSTownList();
     town_eligibility_water = GSTownList();
     town_eligibility_shore = GSTownList();
@@ -39,16 +56,15 @@ class IndustryConstructor extends GSController {
     town_eligibility_nonsnow = GSTownList();
     town_eligibility_nonsnowdesert = GSTownList();
 
-    // Cluster parameters
-    confirmed_cluster_list = GSTileList();
-    confirmed_cluster_footprints = GSTileList();
-    cluster_radius = 10;
-    cluster_footprint_size_req = 4; // How many alias points the cluster footprint should hit.
-    cluster_point_limit = 1000;
+    // Cluster map: tiles that are eligible for being the 'home' of a cluster
+    // We gradually drop tiles from this as we attempt to site clusters and build industries
+    cluster_eligibility_water = GSTileList();
+    cluster_eligibility_nondesert = GSTileList();
+    cluster_eligibility_nonsnow = GSTileList();
+    cluster_eligibility_nonsnowdesert = GSTileList();
+    cluster_eligibility_land = GSTileList();
 
-    ind_type_count = 0; // count of industries in this.ind_type_list, set in industryconstructor.init.
-    cargo_paxid = 0; // passenger cargo id, set in industryconstructor.init.
-
+    farmindustry_list = [];
     rawindustry_list = []; // array of raw industry type id's, set in industryconstructor.init.
     rawindustry_list_count = 0; // count of primary industries, set in industryconstructor.init.
     procindustry_list = []; // array of processor industry type id's, set in industryconstructor.init.
