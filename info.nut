@@ -26,7 +26,12 @@ class IndustryPlacer extends GSInfo
         AddLabels("industry_newgrf", {
             _0 = "None",
             _1 = "North American FIRS",
-            _2 = ""
+            _2 = "FIRS Temperate Basic",
+            _3 = "FIRS Arctic Basic",
+            _4 = "FIRS Tropic Basic",
+            _5 = "FIRS Steeltown",
+            _6 = "FIRS In A Hot Country",
+            _7 = "FIRS Extreme"
         });
         AddSetting({
             name = "town_industry_limit",

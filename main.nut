@@ -123,6 +123,24 @@ function IndustryPlacer::InArray(item, array) {
 function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
     local name = "";
     switch(industry_newgrf) {
+    case 7:
+        name = "FIRS Extreme";
+        break;
+    case 6:
+        name = "FIRS In A Hot Country";
+        break;
+    case 5:
+        name = "FIRS Steeltown";
+        break;
+    case 4:
+        name = "FIRS Tropic Basic";
+        break;
+    case 3:
+        name = "FIRS Arctic Basic";
+        break;
+    case 2:
+        name = "FIRS Temperate Basic";
+        break;
     case 1:
         name = "North American FIRS";
         break;
@@ -139,7 +157,8 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
     local nonsnow_based_industries = [];
     local nonsnowdesert_based_industries = [];
     local farm_industries = [];
-    // Overrides are for industries that we want to force into a tier
+    // Overrides are for industries that we want to force into a tier or terrain type
+    // If the industry is in the right tier and has the right terrain type (check the first logs printed when a new map is created) then it doesn't need to be in here.
     /*
      * From the API docs:
      *   Industries might be neither raw nor processing. This is usually the
@@ -204,11 +223,140 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                          "Mixed Farm"
                          ];
     }
-    if(name == "FIRS Complex") {
-        //tk
+    if(name == "FIRS Temperate Basic") {
+        water_based_industries = [
+                                  "Fishing Grounds",
+                                  "Dredging Site"
+                                  ];
+        shore_based_industries = [
+                                  "Fishing Harbor",
+                                  "Port",
+                                  "Bulk Terminal"
+                                  ];
+        nonsnowdesert_based_industries = [
+                                          "Orchard and Piggery"
+                                          ];
+    }
+    if(name == "FIRS Arctic Basic") {
+        water_based_industries = [
+                                  "Fishing Grounds"
+                                  ];
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Fishing Harbor",
+                                  "Port",
+                                  "Trading Post"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store"
+                                     ];
+        nondesert_based_industries = [
+                                      "Forest"
+                                      ];
+    }
+    if(name == "FIRS Tropic Basic") {
+        water_based_industries = [
+                                  "Fishing Grounds"
+                                  ];
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Fishing Harbor",
+                                  "Port"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store"
+                                     ];
+        nonsnowdesert_based_industries = [
+                                          "Arable Farm",
+                                          "Coffee Estate",
+                                          "Vineyard"
+                                          ];
+        farm_override = [
+                         "Arable Farm"
+                         ];
     }
     if(name == "FIRS Steeltown") {
-        //tk
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Port",
+                                  "Wharf"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store"
+                                     ];
+        neartown_based_industries = [
+                                     "Vehicle Dealer"
+                                     ];
+        nonsnowdesert_based_industries = [
+                                          "Farm"
+                                          ];
+        farm_override = [
+                         "Farm"
+                         ];
+    }
+    if(name == "FIRS In A Hot Country") {
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Liquids Terminal",
+                                  "Port",
+                                  "Trading Post"
+                                  ];
+        water_based_industries = [
+                                  "Oil Rig"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store",
+                                     "Hardware Store"
+                                     ];
+        nondesert_based_industries = [
+                                      "Forest"
+                                      ];
+        nonsnow_based_industries = [
+                                    "Fruit Plantation"
+                                    ];
+        nonsnowdesert_based_industries = [
+                                          "Arable Farm",
+                                          "Coffee Estate",
+                                          "Mixed Farm",
+                                          "Quarry",
+                                          "Rubber Plantation"
+                                          ];
+        farm_override = [
+                         "Arable Farm",
+                         "Mixed Farm"
+                         ];
+    }
+    if(name == "FIRS Extreme") {
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Fishing Harbor",
+                                  "Port"
+                                  ];
+        water_based_industries = [
+                                  "Dredging Site",
+                                  "Fishing Grounds",
+                                  "Oil Rig"
+                                  ];
+        townbldg_based_industries = [
+                                     "Grocery Store",
+                                     "Hardware Store",
+                                     "Smithy Forge"
+                                     ];
+        nondesert_based_industries = [
+                                      "Forest"
+                                      ];
+        nonsnow_based_industries = [
+                                    "Fruit Plantation"
+                                    ];
+        nonsnowdesert_based_industries = [
+                                          "Arable Farm",
+                                          "Dairy Farm",
+                                          "Mixed Farm"
+                                          ];
+        farm_override = [
+                         "Arable Farm",
+                         "Mixed Farm"
+                         ];
     }
 
     foreach(ind_id, value in industry_classes) {
