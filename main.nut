@@ -76,7 +76,8 @@ class IndustryPlacer extends GSController {
                              "NearTown",
                              "Nondesert",
                              "Nonsnow",
-                             "Nonsnowdesert"];
+                             "Nonsnowdesert",
+                             "Skip"];
     constructor() {
         this.town_industry_limit = GSController.GetSetting("town_industry_limit");
         this.town_radius = GSController.GetSetting("town_radius");
@@ -158,6 +159,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
     local nonsnow_based_industries = [];
     local nonsnowdesert_based_industries = [];
     local farm_industries = [];
+    local skip_industries = [];
     // Overrides are for industries that we want to force into a tier or terrain type
     // If the industry is in the right tier and has the right terrain type (check the first logs printed when a new map is created) then it doesn't need to be in here.
     /*
@@ -334,9 +336,9 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                                   "Port"
                                   ];
         water_based_industries = [
+                                  "Oil Rig",
                                   "Dredging Site",
-                                  "Fishing Grounds",
-                                  "Oil Rig"
+                                  "Fishing Grounds"
                                   ];
         townbldg_based_industries = [
                                      "Grocery Store",
@@ -358,6 +360,13 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                          "Arable Farm",
                          "Mixed Farm"
                          ];
+        skip_industries = [
+                           "Biorefinery",
+                           "Oil Rig",
+                           "Recycling Depot",
+                           "Recycling Plant",
+                           "Beach"
+                           ];
     }
 
     foreach(ind_id, value in industry_classes) {
@@ -383,26 +392,31 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
         if(InArray(ind_name, nonsnowdesert_based_industries)) {
             industry_classes.SetValue(ind_id, 7);
         }
+        if(InArray(ind_name, skip_industries)) {
+            industry_classes.SetValue(ind_id, 8);
+        }
     }
 
     foreach(ind_id, value in GSIndustryTypeList()) {
         local ind_name = GSIndustryType.GetName(ind_id);
         // We have to descend down these if else statements in order
         // Otherwise the overrides don't work
-        if(InArray(ind_name, farm_override)) {
-            farmindustry_list.push(ind_id);
-        } else if(InArray(ind_name, primary_override)) {
-            rawindustry_list.push(ind_id);
-        } else if(InArray(ind_name, secondary_override)) {
-            procindustry_list.push(ind_id);
-        } else if(InArray(ind_name, tertiary_override)) {
-            tertiaryindustry_list.push(ind_id);
-        } else if(GSIndustryType.IsRawIndustry(ind_id)) {
-            rawindustry_list.push(ind_id);
-        } else if(GSIndustryType.IsProcessingIndustry(ind_id)) {
-            procindustry_list.push(ind_id);
-        } else {
-            tertiaryindustry_list.push(ind_id);
+        if(!InArray(ind_name, skip_industries)) {
+            if(InArray(ind_name, farm_override)) {
+                farmindustry_list.push(ind_id);
+            } else if(InArray(ind_name, primary_override)) {
+                rawindustry_list.push(ind_id);
+            } else if(InArray(ind_name, secondary_override)) {
+                procindustry_list.push(ind_id);
+            } else if(InArray(ind_name, tertiary_override)) {
+                tertiaryindustry_list.push(ind_id);
+            } else if(GSIndustryType.IsRawIndustry(ind_id)) {
+                rawindustry_list.push(ind_id);
+            } else if(GSIndustryType.IsProcessingIndustry(ind_id)) {
+                procindustry_list.push(ind_id);
+            } else {
+                tertiaryindustry_list.push(ind_id);
+            }
         }
     }
     Print("-----Primary industries:-----");
