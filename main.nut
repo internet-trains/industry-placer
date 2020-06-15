@@ -424,16 +424,6 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
     Print("-----Registration done.-----")
 }
 
-// Zero
-function IndustryPlacer::Zero(x) {
-    return 0;
-}
-
-// Identity
-function IndustryPlacer::Id(x) {
-    return 1;
-}
-
 // Initialization function
 function IndustryPlacer::Init() {
     Sleep(1);
@@ -1173,6 +1163,13 @@ function IndustryPlacer::Print(string) {
     GSController.Print(false, (GSDate.GetSystemTime() % 3600) + " " + string);
 }
 
-function IndustryPlacer::Save() {
-    return {};
+// Zero
+function IndustryPlacer::Zero(x) {
+    return 0;
 }
+
+// Identity
+function IndustryPlacer::Id(x) {
+    return 1;
+}
+
