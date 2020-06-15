@@ -471,7 +471,7 @@ function IndustryPlacer::Init() {
 
 function IndustryPlacer::FillCash() {
     if(GSCompany.GetBankBalance(company_id) < 20000000) {
-        GSCompany.ChangeBankBalance(company_id, 1000000000, GSCompany.EXPENSES_OTHER);
+        GSCompany.ChangeBankBalance(company_id, 1500000000, GSCompany.EXPENSES_OTHER);
     }
 }
 
