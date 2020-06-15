@@ -17,7 +17,7 @@ class IndustryPlacer extends GSController {
     cluster_industry_limit = 0;
     cluster_spacing = 0;
     industry_spacing = 0;
-    industry_newgrf = 0;
+    industry_newgrf = 0; // change based on setting
     large_town_cutoff = 0;
     large_town_spacing = 0;
     farm_spacing = 0;
