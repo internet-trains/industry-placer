@@ -107,8 +107,9 @@ function IndustryPlacer::Load() {
 
 // Program start function
 function IndustryPlacer::Start() {
+    // We have to re-initialize this. This is due to the script state being saved in the scenario editor and interacting strangely in round trips between save files and the scenario editor.
+    industry_classes = GSIndustryTypeList();
     this.Init();
-    //this.BuildIndustry();
 }
 
 function IndustryPlacer::InArray(item, array) {
