@@ -296,6 +296,9 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
         farm_override = [
                          "Farm"
                          ];
+        skip_industries = [
+                           "Beach"
+                           ];
     }
     if(name == "FIRS In A Hot Country") {
         shore_based_industries = [
