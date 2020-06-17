@@ -364,6 +364,9 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                          "Arable Farm",
                          "Mixed Farm"
                          ];
+        tertiary_override = [
+                             "Smithy Forge"
+                             ];
         skip_industries = [
                            "Biorefinery",
                            "Oil Rig",
