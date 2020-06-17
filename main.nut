@@ -445,39 +445,42 @@ function IndustryPlacer::Init() {
     RegisterIndustryGRF(industry_newgrf);
     MapPreprocess();
     InitializeTowns();
-    foreach(ind_id in tertiaryindustry_list) {
-        local build_counter = 0;
-        while(build_counter < tertiary_industry_min) {
+    local build_counter = 0;
+    local exhaustion_flag = false;
+    while(build_counter < tertiary_industry_min && !exhaustion_flag) {
+        foreach(ind_id in tertiaryindustry_list) {
             local build = TownBuildMethod(ind_id);
             if(build == -1) {
+                exhaustion_flag = true;
                 break;
-            } else {
-                build_counter += build;
             }
         }
+        build_counter += 1;
     }
     InitializeClusterMap();
-    foreach(ind_id in rawindustry_list) {
-        local build_counter = 0;
-        while(build_counter < raw_industry_min) {
+    build_counter = 0;
+    exhaustion_flag = false;
+    while(build_counter < raw_industry_min && !exhaustion_flag) {
+        foreach(ind_id in rawindustry_list) {
             local build = ClusterBuildMethod(ind_id);
             if(build == -1) {
+                exhaustion_flag = true;
                 break;
-            } else {
-                build_counter += build;
             }
         }
+        build_counter += 1;
     }
-    foreach(ind_id in procindustry_list) {
-        local build_counter = 0;
-        while(build_counter < proc_industry_min) {
+    build_counter = 0;
+    exhaustion_flag = false;
+    while(build_counter < proc_industry_min && !exhaustion_flag) {
+        foreach(ind_id in procindustry_list) {
             local build = ScatteredBuildMethod(ind_id);
             if(build == -1) {
+                exhaustion_flag = true;
                 break;
-            } else {
-                build_counter += build;
             }
         }
+        build_counter += 1;
     }
     FillFarms();
     Print("Done!")
