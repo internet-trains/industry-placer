@@ -26,6 +26,7 @@ class IndustryPlacer extends GSController {
     tertiary_industry_min = 0;
 
     // End config set variables
+    debug_level = 3;
     company_id = 0;
     build_limit = 0;
     chunk_size = 256; // Change this if Valuate runs out of CPU time
@@ -150,7 +151,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
         name = "Default";
         break;
     }
-    Print("Registering " + name + " industries.");
+    Print("Registering " + name + " industries.", 0);
     local water_based_industries = [];
     local shore_based_industries = [];
     local townbldg_based_industries = [];
@@ -422,23 +423,23 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
             }
         }
     }
-    Print("-----Primary industries:-----");
+    Print("-----Primary industries:-----", 0);
     foreach(ind_id in rawindustry_list) {
-        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)], 0);
     }
-    Print("-----Secondary industries:-----");
+    Print("-----Secondary industries:-----", 0);
     foreach(ind_id in procindustry_list) {
-        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)], 0);
     }
-    Print("-----Tertiary industries:-----");
+    Print("-----Tertiary industries:-----", 0);
     foreach(ind_id in tertiaryindustry_list) {
-        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)], 0);
     }
-    Print("-----Farm industries:-----");
+    Print("-----Farm industries:-----", 0);
     foreach(ind_id in farmindustry_list) {
-        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)]);
+        Print(GSIndustryType.GetName(ind_id) + ": " + industry_class_lookup[industry_classes.GetValue(ind_id)], 0);
     }
-    Print("-----Registration done.-----")
+    Print("-----Registration done.-----", 0)
 }
 
 // Initialization function
@@ -449,9 +450,9 @@ function IndustryPlacer::Init() {
     MapPreprocess();
     InitializeTowns();
     local build_counter = 0;
-    local exhaustion_flag = false;
-    while(build_counter < tertiary_industry_min && !exhaustion_flag) {
-        local exhausted_list = [];
+    local exhausted_list = [];
+    while(build_counter < tertiary_industry_min &&
+          exhausted_list.len() != tertiaryindustry_list.len()) {
         foreach(ind_id in tertiaryindustry_list) {
             local build = 0;
             while(build == 0) {
@@ -461,17 +462,15 @@ function IndustryPlacer::Init() {
                 // This specific industry has been exhausted
                 // Add it to the skip list
                 exhausted_list.append(ind_id);
-                break;
             }
         }
         build_counter += 1;
-        exhaustion_flag = exhausted_list.len() == tertiaryindustry_list.len();
     }
     InitializeClusterMap();
     build_counter = 0;
-    exhaustion_flag = false;
-    while(build_counter < raw_industry_min && !exhaustion_flag) {
-        local exhausted_list = [];
+    exhausted_list = [];
+    while(build_counter < raw_industry_min &&
+          exhausted_list.len() != rawindustry_list.len()) {
         foreach(ind_id in rawindustry_list) {
             local build = 0;
             while(build == 0) {
@@ -479,16 +478,14 @@ function IndustryPlacer::Init() {
             }
             if(build == -1) {
                 exhausted_list.append(ind_id);
-                break;
             }
         }
         build_counter += 1;
-        exhaustion_flag = exhausted_list.len() == rawindustry_list.len();
     }
     build_counter = 0;
-    exhaustion_flag = false;
-    while(build_counter < proc_industry_min && !exhaustion_flag) {
-        local exhausted_list = [];
+    exhausted_list = [];
+    while(build_counter < proc_industry_min &&
+          exhausted_list.len() != procindustry_list.len()) {
         foreach(ind_id in procindustry_list) {
             local build = 0;
             while(build == 0) {
@@ -496,14 +493,12 @@ function IndustryPlacer::Init() {
             }
             if(build == -1) {
                 exhausted_list.append(ind_id);
-                break;
             }
         }
         build_counter += 1;
-        exhaustion_flag = exhausted_list.len() == procindustry_list.len();
     }
     FillFarms();
-    Print("Done!")
+    Print("Done!", 0)
 }
 
 function IndustryPlacer::FillCash() {
@@ -565,14 +560,14 @@ function IndustryPlacer::InitializeClusterMap() {
 // Creates data for all tiles on the map
 
 function IndustryPlacer::MapPreprocess() {
-    Print("Building map tile list.");
+    Print("Building map tile list.", 0);
     local all_tiles = GSTileList();
     all_tiles.AddRectangle(GSMap.GetTileIndex(1, 1),
                            GSMap.GetTileIndex(GSMap.GetMapSizeX() - 2,
                                               GSMap.GetMapSizeY() - 2));
-    Print("Map list size: " + all_tiles.Count());
+    Print("Map list size: " + all_tiles.Count(), 0);
     local chunks = (GSMap.GetMapSizeX() - 2) * (GSMap.GetMapSizeY() - 2) / (chunk_size * chunk_size);
-    Print("Loading " + chunks + " chunks:");
+    Print("Loading " + chunks + " chunks:", 0);
     // Hybrid approach:
     // Break the map into chunk_size x chunk_size chunks and valuate on each of them
     local progress = ProgressReport(chunks);
@@ -607,18 +602,18 @@ function IndustryPlacer::MapPreprocess() {
             nondesert_tiles.AddList(chunk_nondesert);
             nonsnow_tiles.AddList(chunk_nonsnow);
             if(progress.Increment()) {
-                Print(progress);
+                Print(progress, 0);
             }
         }
     }
     BuildEligibleTownTiles();
-    Print("Land tile list size: " + land_tiles.Count());
-    Print("Shore tile list size: " + shore_tiles.Count());
-    Print("Water tile list size: " + water_tiles.Count());
-    Print("Nondesert tile list size: " + nondesert_tiles.Count());
-    Print("Nonsnow tile list size: " + nonsnow_tiles.Count());
-    Print("Town tile list size: " + town_tiles.Count());
-    Print("Outer town tile list size: " + outer_town_tiles.Count());
+    Print("Land tile list size: " + land_tiles.Count(), 0);
+    Print("Shore tile list size: " + shore_tiles.Count(), 0);
+    Print("Water tile list size: " + water_tiles.Count(), 0);
+    Print("Nondesert tile list size: " + nondesert_tiles.Count(), 0);
+    Print("Nonsnow tile list size: " + nonsnow_tiles.Count(), 0);
+    Print("Town tile list size: " + town_tiles.Count(), 0);
+    Print("Outer town tile list size: " + outer_town_tiles.Count(), 0);
 }
 
 function IndustryPlacer::IsFlatTile(tile_id) {
@@ -642,7 +637,7 @@ function IndustryPlacer::BuildEligibleTownTiles() {
     2. get every tile in every town
     3. cull based on config parameters
      */
-    Print("Building town tile list.");
+    Print("Building town tile list.", 0);
     local town_list = GSTownList();
     town_list.Valuate(GSTown.GetLocation);
     local progress = ProgressReport(town_list.Count());
@@ -664,7 +659,7 @@ function IndustryPlacer::BuildEligibleTownTiles() {
             }
         }
         if(progress.Increment()) {
-            Print(progress);
+            Print(progress, 0);
         }
     }
     // Cull all outer town tiles that 'splashed' into nearby towns
@@ -837,15 +832,15 @@ function IndustryPlacer::TownBuildMethod(industry_id) {
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local eligible_towns = GetEligibleTowns(terrain_class);
     if(eligible_towns.IsEmpty() == true) {
-        Print("No more eligible " + terrain_class + " towns!");
+        Print("No more eligible " + terrain_class + " towns!", 1);
         return -1;
     }
     local town_id = SampleGSList(eligible_towns);
     local eligible_tiles = GetEligibleTownTiles(town_id, terrain_class);
-    Print("Attempting " + ind_name + " in " + GSTown.GetName(town_id));
+    Print("Attempting " + ind_name + " in " + GSTown.GetName(town_id), 3);
 
     if(eligible_tiles.Count() == 0) {
-        Print("Exhausted " + terrain_class + " in " + GSTown.GetName(town_id));
+        Print("Exhausted " + terrain_class + " in " + GSTown.GetName(town_id), 2);
         DropTown(town_id, terrain_class);
         return 0;
     }
@@ -863,7 +858,7 @@ function IndustryPlacer::TownBuildMethod(industry_id) {
         ClearTile(attempt_tile);
         local build_success = Build(industry_id, attempt_tile);
         if(build_success) {
-            Print("Founded " + ind_name + " in " + GSTown.GetName(town_id));
+            Print("Founded " + ind_name + " in " + GSTown.GetName(town_id), 3);
             // Check town industry limit (TK) and remove town from global eligible town list if so
             local town_current_industries = town_industry_counts.GetValue(town_id) + 1;
             town_industry_counts.SetValue(town_id, town_current_industries);
@@ -877,7 +872,7 @@ function IndustryPlacer::TownBuildMethod(industry_id) {
             return 1;
         }
     }
-    Print(GSTown.GetName(town_id) + " exhausted.");
+    Print(GSTown.GetName(town_id) + " exhausted.", 2);
     // Tiles exhausted, return
     return 0;
 }
@@ -979,7 +974,7 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
     local cluster_eligible_tiles = GetEligibleClusterTiles(terrain_class);
     local cluster_acceptable = false;
     local cluster_zone = GSTileList();
-    Print("Seeking " + ind_name + " cluster zone");
+    Print("Seeking " + ind_name + " cluster zone", 3);
     while(!cluster_acceptable && cluster_eligible_tiles.Count() > 0) {
         local cluster_home = SampleGSList(cluster_eligible_tiles);
         cluster_eligible_tiles.RemoveItem(cluster_home);
@@ -989,7 +984,7 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
         // Accept zone?
         cluster_acceptable = cluster_zone.Count() * 100 > cluster_occ_pct * (cluster_radius * cluster_radius - town_radius * town_radius);
         if(cluster_acceptable) {
-            Print(ind_name + " cluster sited at " + "(" + GSMap.GetTileX(cluster_home) + ", " + GSMap.GetTileY(cluster_home) + ")");
+            Print(ind_name + " cluster sited at " + "(" + GSMap.GetTileX(cluster_home) + ", " + GSMap.GetTileY(cluster_home) + ")", 3);
                 // Now we have a cluster_zone with tiles of possible industry sites
                 // Remove all tiles in cluster_zone from future cluster home eligibility
             foreach(tile_id, value in RectangleAroundTile(cluster_home, cluster_radius + cluster_spacing)) {
@@ -1000,7 +995,7 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
 
     // Either the cluster is acceptable OR we ran out of cluster home tiles
     if(cluster_eligible_tiles.IsEmpty()) {
-        Print("Unable to site cluster for terrain type " + terrain_class);
+        Print("Unable to site cluster for terrain type " + terrain_class, 1);
         return -1;
     }
     local built_industries = 0;
@@ -1023,7 +1018,7 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
         }
         built_industries += build_success ? 1 : 0;
     }
-    Print("Built " + built_industries + " " + ind_name);
+    Print("Built " + built_industries + " " + ind_name, 3);
     return built_industries;
 }
 
@@ -1054,7 +1049,7 @@ function IndustryPlacer::ScatteredBuildMethod(industry_id) {
     local ind_name = GSIndustryType.GetName(industry_id);
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local terrain_tiles = GSList();
-    Print("Attempting to build " + ind_name);
+    Print("Attempting to build " + ind_name, 3);
     switch(terrain_class) {
     case "Water":
         terrain_tiles.AddList(water_tiles);
@@ -1080,7 +1075,7 @@ function IndustryPlacer::ScatteredBuildMethod(industry_id) {
         break;
     }
     if(terrain_tiles.Count() == 0) {
-        Print("Exhausted " + terrain_class + " tiles!");
+        Print("Exhausted " + terrain_class + " tiles!", 1);
         return -1;
     }
     local attempt_tile = SampleGSList(terrain_tiles);
@@ -1091,14 +1086,14 @@ function IndustryPlacer::ScatteredBuildMethod(industry_id) {
         foreach(tile_id, value in industry_footprint) {
             ClearTile(tile_id);
         }
-        Print("Built " + ind_name);
+        Print("Built " + ind_name, 3);
     }
     return build_success ? 1 : 0;
 }
 
 function IndustryPlacer::FillFarms() {
     if(farmindustry_list.len() > 0) {
-        Print("Filling in farmland.");
+        Print("Filling in farmland.", 0);
         while(outer_town_tiles.Count() > 0) {
             local industry_id = farmindustry_list[GSBase.RandRange(farmindustry_list.len())];
             local ind_name = GSIndustryType.GetName(industry_id);
@@ -1196,8 +1191,10 @@ function IndustryPlacer::FarFromIndustry(tile_id) {
     return ind_distance > (GSController.GetSetting("TOWN_MIN_IND"));
 }
 
-function IndustryPlacer::Print(string) {
-    GSController.Print(false, (GSDate.GetSystemTime() % 3600) + " " + string);
+function IndustryPlacer::Print(string, level) {
+    if(level <= debug_level) {
+        GSController.Print(false, (GSDate.GetSystemTime() % 3600) + " " + string);
+    }
 }
 
 // Zero
