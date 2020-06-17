@@ -448,39 +448,56 @@ function IndustryPlacer::Init() {
     local build_counter = 0;
     local exhaustion_flag = false;
     while(build_counter < tertiary_industry_min && !exhaustion_flag) {
+        local exhausted_list = [];
         foreach(ind_id in tertiaryindustry_list) {
-            local build = TownBuildMethod(ind_id);
+            local build = 0;
+            while(build == 0) {
+                build = TownBuildMethod(ind_id);
+            }
             if(build == -1) {
-                exhaustion_flag = true;
+                // This specific industry has been exhausted
+                // Add it to the skip list
+                exhausted_list.append(ind_id);
                 break;
             }
         }
         build_counter += 1;
+        exhaustion_flag = exhausted_list.len() == tertiaryindustry_list.len();
     }
     InitializeClusterMap();
     build_counter = 0;
     exhaustion_flag = false;
     while(build_counter < raw_industry_min && !exhaustion_flag) {
+        local exhausted_list = [];
         foreach(ind_id in rawindustry_list) {
-            local build = ClusterBuildMethod(ind_id);
+            local build = 0;
+            while(build == 0) {
+                build = ClusterBuildMethod(ind_id);
+            }
             if(build == -1) {
-                exhaustion_flag = true;
+                exhausted_list.append(ind_id);
                 break;
             }
         }
         build_counter += 1;
+        exhaustion_flag = exhausted_list.len() == rawindustry_list.len();
     }
     build_counter = 0;
     exhaustion_flag = false;
     while(build_counter < proc_industry_min && !exhaustion_flag) {
+        local exhausted_list = [];
         foreach(ind_id in procindustry_list) {
-            local build = ScatteredBuildMethod(ind_id);
+            local build = 0;
+            while(build == 0) {
+                build = ScatteredBuildMethod(ind_id);
+            }
             if(build == -1) {
-                exhaustion_flag = true;
+                exhausted_list.append(ind_id);
                 break;
             }
         }
         build_counter += 1;
+        exhaustion_flag = exhausted_list.len() == procindustry_list.len();
     }
     FillFarms();
     Print("Done!")
