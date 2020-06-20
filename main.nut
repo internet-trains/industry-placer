@@ -556,6 +556,17 @@ function IndustryPlacer::InitializeClusterMap() {
     cluster_eligibility_nonsnowdesert.KeepList(nonsnow_tiles);
     cluster_eligibility_land.AddList(outer_town_tiles);
     cluster_eligibility_land.KeepList(land_tiles);
+
+    cluster_eligibility_water.Valuate(GSBase.RandItem);
+    cluster_eligibility_water.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    cluster_eligibility_nondesert.Valuate(GSBase.RandItem);
+    cluster_eligibility_nondesert.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    cluster_eligibility_nonsnow.Valuate(GSBase.RandItem);
+    cluster_eligibility_nonsnow.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    cluster_eligibility_nonsnowdesert.Valuate(GSBase.RandItem);
+    cluster_eligibility_nonsnowdesert.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    cluster_eligibility_land.Valuate(GSBase.RandItem);
+    cluster_eligibility_land.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
 }
 
 
@@ -587,18 +598,28 @@ function IndustryPlacer::MapPreprocess() {
             chunk_land.KeepValue(0);
             chunk_land.Valuate(IsFlatTile);
             chunk_land.KeepValue(1);
+            chunk_land.Valuate(GSBase.RandItem);
+
             chunk_shore.Valuate(GSTile.IsCoastTile);
             chunk_shore.KeepValue(1);
+            chunk_shore.Valuate(GSBase.RandItem);
+
             chunk_water.Valuate(GSTile.IsWaterTile);
             chunk_water.KeepValue(1);
             chunk_water.Valuate(IsFlatTile);
             chunk_water.KeepValue(1);
+            chunk_water.Valuate(GSBase.RandItem);
+
             chunk_nondesert.AddList(chunk_land);
             chunk_nondesert.Valuate(GSTile.IsDesertTile);
             chunk_nondesert.KeepValue(0);
+            chunk_nondesert.Valuate(GSBase.RandItem);
+
             chunk_nonsnow.AddList(chunk_land);
             chunk_nonsnow.Valuate(GSTile.IsSnowTile);
             chunk_nonsnow.KeepValue(0);
+            chunk_nonsnow.Valuate(GSBase.RandItem);
+
             land_tiles.AddList(chunk_land);
             shore_tiles.AddList(chunk_shore);
             water_tiles.AddList(chunk_water);
@@ -609,6 +630,11 @@ function IndustryPlacer::MapPreprocess() {
             }
         }
     }
+    land_tiles.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    shore_tiles.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    water_tiles.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    nondesert_tiles.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
+    nonsnow_tiles.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
     BuildEligibleTownTiles();
     Print("Land tile list size: " + land_tiles.Count(), 0);
     Print("Shore tile list size: " + shore_tiles.Count(), 0);
@@ -835,11 +861,13 @@ function IndustryPlacer::TownBuildMethod(industry_id) {
     local terrain_class = industry_class_lookup[industry_classes.GetValue(industry_id)];
     local eligible_towns = GetEligibleTowns(terrain_class);
     if(eligible_towns.IsEmpty() == true) {
-        Print("No more eligible " + terrain_class + " towns!", 1);
+        Print("No more eligible " + terrain_class + " towns!", 2);
         return -1;
     }
     local town_id = SampleGSList(eligible_towns);
     local eligible_tiles = GetEligibleTownTiles(town_id, terrain_class);
+    eligible_tiles.Valuate(GSBase.RandItem);
+    eligible_tiles.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
     Print("Attempting " + ind_name + " in " + GSTown.GetName(town_id), 3);
 
     if(eligible_tiles.Count() == 0) {
@@ -856,8 +884,8 @@ function IndustryPlacer::TownBuildMethod(industry_id) {
     //    - Check for town industry limit here and cull from eligible_towns if this puts it over the limit
     //    - Check if the town we just built in now no longer has any eligible tiles
     while(eligible_tiles.Count() > 0) {
-        local attempt_tile = SampleGSList(eligible_tiles);
-        eligible_tiles.RemoveItem(attempt_tile);
+        local attempt_tile = eligible_tiles.Begin();
+        eligible_tiles.RemoveTop(1);
         ClearTile(attempt_tile);
         local build_success = Build(industry_id, attempt_tile);
         if(build_success) {
@@ -979,8 +1007,8 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
     local cluster_zone = GSTileList();
     Print("Seeking " + ind_name + " cluster zone", 3);
     while(!cluster_acceptable && cluster_eligible_tiles.Count() > 0) {
-        local cluster_home = SampleGSList(cluster_eligible_tiles);
-        cluster_eligible_tiles.RemoveItem(cluster_home);
+        local cluster_home = cluster_eligible_tiles.Begin();
+        cluster_eligible_tiles.RemoveTop(1);
         ClusterClearTile(cluster_home);
 
         cluster_zone = FilterToTerrain(RectangleAroundTile(cluster_home, cluster_radius), terrain_class);
@@ -1004,10 +1032,12 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
     local built_industries = 0;
 
     // Now we just spam industry builds until we've built to cluster_limit or tiles run out
+    cluster_zone.Valuate(GSBase.RandItem);
+    cluster_zone.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
     while(cluster_zone.Count() > 0 && built_industries < cluster_industry_limit) {
-        local attempt_tile = SampleGSList(cluster_zone);
+        local attempt_tile = cluster_zone.Begin();
         // We remove this tile from both the tile lists and also possible cluster home lists
-        cluster_zone.RemoveItem(attempt_tile);
+        cluster_zone.RemoveTop(1);
         ClearTile(attempt_tile);
         ClusterClearTile(attempt_tile);
         local build_success = Build(industry_id, attempt_tile);
@@ -1022,6 +1052,7 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
         built_industries += build_success ? 1 : 0;
     }
     Print("Built " + built_industries + " " + ind_name, 3);
+
     return built_industries;
 }
 
@@ -1081,7 +1112,7 @@ function IndustryPlacer::ScatteredBuildMethod(industry_id) {
         Print("Exhausted " + terrain_class + " tiles!", 1);
         return -1;
     }
-    local attempt_tile = SampleGSList(terrain_tiles);
+    local attempt_tile = terrain_tiles.Begin();
     ClearTile(attempt_tile);
     local build_success = Build(industry_id, attempt_tile);
     if(build_success) {
@@ -1209,4 +1240,3 @@ function IndustryPlacer::Zero(x) {
 function IndustryPlacer::Id(x) {
     return 1;
 }
-
