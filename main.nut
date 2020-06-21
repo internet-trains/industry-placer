@@ -545,27 +545,22 @@ function IndustryPlacer::InitializeTowns() {
 }
 
 function IndustryPlacer::InitializeClusterMap() {
-    cluster_eligibility_water.AddList(outer_town_tiles);
-    cluster_eligibility_water.KeepList(water_tiles);
-    cluster_eligibility_nondesert.AddList(outer_town_tiles);
-    cluster_eligibility_nondesert.KeepList(nondesert_tiles);
-    cluster_eligibility_nonsnow.AddList(outer_town_tiles);
-    cluster_eligibility_nonsnow.KeepList(nonsnow_tiles);
-    cluster_eligibility_nonsnowdesert.AddList(outer_town_tiles);
+    cluster_eligibility_water.AddList(water_tiles);
+    cluster_eligibility_water.KeepList(outer_town_tiles);
+    cluster_eligibility_nondesert.AddList(nondesert_tiles);
+    cluster_eligibility_nondesert.KeepList(outer_town_tiles);
+    cluster_eligibility_nonsnow.AddList(nonsnow_tiles);
+    cluster_eligibility_nonsnow.KeepList(outer_town_tiles);
+    cluster_eligibility_nonsnowdesert.AddList(nonsnow_tiles);
+    cluster_eligibility_nonsnowdesert.KeepList(outer_town_tiles);
     cluster_eligibility_nonsnowdesert.KeepList(nondesert_tiles);
-    cluster_eligibility_nonsnowdesert.KeepList(nonsnow_tiles);
-    cluster_eligibility_land.AddList(outer_town_tiles);
-    cluster_eligibility_land.KeepList(land_tiles);
+    cluster_eligibility_land.AddList(land_tiles);
+    cluster_eligibility_land.KeepList(outer_town_tiles);
 
-    cluster_eligibility_water.Valuate(GSBase.RandItem);
     cluster_eligibility_water.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
-    cluster_eligibility_nondesert.Valuate(GSBase.RandItem);
     cluster_eligibility_nondesert.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
-    cluster_eligibility_nonsnow.Valuate(GSBase.RandItem);
     cluster_eligibility_nonsnow.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
-    cluster_eligibility_nonsnowdesert.Valuate(GSBase.RandItem);
     cluster_eligibility_nonsnowdesert.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
-    cluster_eligibility_land.Valuate(GSBase.RandItem);
     cluster_eligibility_land.Sort(GSList.SORT_BY_VALUE, GSList.SORT_ASCENDING);
 }
 
