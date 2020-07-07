@@ -24,9 +24,9 @@ class IndustryPlacer extends GSController {
     raw_industry_min = 0;
     proc_industry_min = 0;
     tertiary_industry_min = 0;
+    debug_level = 0;
 
     // End config set variables
-    debug_level = 3;
     company_id = 0;
     build_limit = 0;
     chunk_size = 256; // Change this if Valuate runs out of CPU time
@@ -452,6 +452,7 @@ function IndustryPlacer::Init() {
     RegisterIndustryGRF(industry_newgrf);
     MapPreprocess();
     InitializeTowns();
+    Print("-----Building tertiary industry:-----", 0);
     local build_counter = 0;
     local exhausted_list = [];
     while(build_counter < tertiary_industry_min &&
@@ -472,6 +473,7 @@ function IndustryPlacer::Init() {
     InitializeClusterMap();
     build_counter = 0;
     exhausted_list = [];
+    Print("-----Building primary industry:-----", 0);
     while(build_counter < raw_industry_min &&
           exhausted_list.len() != rawindustry_list.len()) {
         foreach(ind_id in rawindustry_list) {
@@ -487,6 +489,7 @@ function IndustryPlacer::Init() {
     }
     build_counter = 0;
     exhausted_list = [];
+    Print("-----Building secondary industry:-----", 0);
     while(build_counter < proc_industry_min &&
           exhausted_list.len() != procindustry_list.len()) {
         foreach(ind_id in procindustry_list) {
@@ -1021,7 +1024,7 @@ function IndustryPlacer::ClusterBuildMethod(industry_id) {
 
     // Either the cluster is acceptable OR we ran out of cluster home tiles
     if(cluster_eligible_tiles.IsEmpty()) {
-        Print("Unable to site cluster for terrain type " + terrain_class, 1);
+        Print("Unable to site cluster for terrain type " + terrain_class, 2);
         return -1;
     }
     local built_industries = 0;
@@ -1104,7 +1107,7 @@ function IndustryPlacer::ScatteredBuildMethod(industry_id) {
         break;
     }
     if(terrain_tiles.Count() == 0) {
-        Print("Exhausted " + terrain_class + " tiles!", 1);
+        Print("Exhausted " + terrain_class + " tiles!", 2);
         return -1;
     }
     local attempt_tile = terrain_tiles.Begin();

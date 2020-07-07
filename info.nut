@@ -47,48 +47,48 @@ class IndustryPlacer extends GSInfo
         });
         AddSetting({
             name = "town_radius",
-            description = "Near town threshold",
-            flags = CONFIG_INGAME,
-            easy_value = 20,
-            medium_value = 20,
-            hard_value = 20,
-            custom_value = 20,
-            min_value = 10,
-            max_value = 100,
-            step_size = 10
-        });
-        AddSetting({
-            name = "town_long_radius",
-            description = "Far town threshold",
-            flags = CONFIG_INGAME,
-            easy_value = 70,
-            medium_value = 70,
-            hard_value = 70,
-            custom_value = 70,
-            min_value = 10,
-            max_value = 100,
-            step_size = 10
-        });
-        AddSetting({
-            name = "cluster_radius",
-            description = "Cluster footprint size",
+            description = "Tertiary industry distance from town limit",
             flags = CONFIG_INGAME,
             easy_value = 20,
             medium_value = 20,
             hard_value = 20,
             custom_value = 20,
             min_value = 0,
+            max_value = 200,
+            step_size = 10
+        });
+        AddSetting({
+            name = "town_long_radius",
+            description = "Primary industry distance from town limit",
+            flags = CONFIG_INGAME,
+            easy_value = 70,
+            medium_value = 70,
+            hard_value = 70,
+            custom_value = 70,
+            min_value = 10,
+            max_value = 1000,
+            step_size = 10
+        });
+        AddSetting({
+            name = "cluster_radius",
+            description = "Cluster footprint radius",
+            flags = CONFIG_INGAME,
+            easy_value = 10,
+            medium_value = 10,
+            hard_value = 10,
+            custom_value = 10,
+            min_value = 0,
             max_value = 50,
             step_size = 10
         });
         AddSetting({
             name = "cluster_occ_pct",
-            description = "Percent available space for cluster siting",
+            description = "Percent available space for cluster siting required",
             flags = CONFIG_INGAME,
-            easy_value = 80,
-            medium_value = 80,
-            hard_value = 80,
-            custom_value = 80,
+            easy_value = 0,
+            medium_value = 0,
+            hard_value = 0,
+            custom_value = 0,
             min_value = 0,
             max_value = 100,
             step_size = 10
@@ -97,22 +97,22 @@ class IndustryPlacer extends GSInfo
             name = "cluster_industry_limit",
             description = "Max industries per cluster",
             flags = CONFIG_INGAME,
-            easy_value = 10,
-            medium_value = 10,
-            hard_value = 10,
-            custom_value = 10,
+            easy_value = 100,
+            medium_value = 100,
+            hard_value = 100,
+            custom_value = 100,
             min_value = 0,
-            max_value = 30,
-            step_size = 1
+            max_value = 100,
+            step_size = 10
         });
         AddSetting({
             name = "cluster_spacing",
             description = "Space between cluster zones",
             flags = CONFIG_INGAME,
-            easy_value = 30,
-            medium_value = 30,
-            hard_value = 30,
-            custom_value = 30,
+            easy_value = 50,
+            medium_value = 50,
+            hard_value = 50,
+            custom_value = 50,
             min_value = 0,
             max_value = 100,
             step_size = 10
@@ -121,10 +121,10 @@ class IndustryPlacer extends GSInfo
             name = "industry_spacing",
             description = "Space between any two industries",
             flags = CONFIG_INGAME,
-            easy_value = 9,
-            medium_value = 9,
-            hard_value = 9,
-            custom_value = 9,
+            easy_value = 5,
+            medium_value = 5,
+            hard_value = 5,
+            custom_value = 5,
             min_value = 0,
             max_value = 100,
             step_size = 10
@@ -133,13 +133,13 @@ class IndustryPlacer extends GSInfo
             name = "large_town_cutoff",
             description = "Clusters avoid towns above this size",
             flags = CONFIG_INGAME,
-            easy_value = 1200,
-            medium_value = 1200,
-            hard_value = 1200,
-            custom_value = 1200,
+            easy_value = 600,
+            medium_value = 600,
+            hard_value = 600,
+            custom_value = 600,
             min_value = 0,
             max_value = 10000,
-            step_size = 1000
+            step_size = 100
         });
         AddSetting({
             name = "large_town_spacing",
@@ -157,49 +157,61 @@ class IndustryPlacer extends GSInfo
             name = "farm_spacing",
             description = "Spacing between farm fill",
             flags = CONFIG_INGAME,
-            easy_value = 20,
-            medium_value = 20,
-            hard_value = 20,
-            custom_value = 20,
+            easy_value = 40,
+            medium_value = 40,
+            hard_value = 40,
+            custom_value = 40,
             min_value = 0,
             max_value = 500,
             step_size = 10
         });
         AddSetting({
             name = "raw_industry_min",
-            description = "Build at least this many of each raw industry",
+            description = "Attempt to build this many clusters of raw industry",
             flags = CONFIG_INGAME,
-            easy_value = 5,
-            medium_value = 5,
-            hard_value = 5,
-            custom_value = 5,
+            easy_value = 5000,
+            medium_value = 5000,
+            hard_value = 5000,
+            custom_value = 5000,
             min_value = 0,
             max_value = 5000,
             step_size = 10
         });
         AddSetting({
             name = "proc_industry_min",
-            description = "Build at least this many of each processing industry",
+            description = "Attempt to build this many processing industries",
             flags = CONFIG_INGAME,
-            easy_value = 5,
-            medium_value = 5,
-            hard_value = 5,
-            custom_value = 5,
+            easy_value = 10,
+            medium_value = 10,
+            hard_value = 10,
+            custom_value = 10,
             min_value = 0,
             max_value = 5000,
             step_size = 10
         });
         AddSetting({
             name = "tertiary_industry_min",
-            description = "Build at least this many of each tertiary industry",
+            description = "Attempt to build this many tertiary industries",
             flags = CONFIG_INGAME,
-            easy_value = 5,
-            medium_value = 5,
-            hard_value = 5,
-            custom_value = 5,
+            easy_value = 5000,
+            medium_value = 5000,
+            hard_value = 5000,
+            custom_value = 5000,
             min_value = 0,
             max_value = 5000,
             step_size = 10
+        });
+        AddSetting({
+            name = "debug_level",
+            description = "Debug log level - 3 for most verbose",
+            flags = CONFIG_INGAME,
+            easy_value = 0,
+            medium_value = 0,
+            hard_value = 0,
+            custom_value = 0,
+            min_value = 0,
+            max_value = 3,
+            step_size = 1
         });
     }
 }
