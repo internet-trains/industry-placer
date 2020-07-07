@@ -1,190 +1,107 @@
-Industry Constructor GameScript by R2dical
-==========================================
+# Industry Placer
 
-A game script for OpenTTD, that provides options for how
-industries are built and can also maintain the number level
-as the game progresses.
+This is a heavily modified version of the industry placer script from R2dical,
+posted at https://www.tt-forums.net/viewtopic.php?f=65&t=67181&start=40
 
-Version 3, tested with OpenTTD 1.3.2
+This script attempts to place industries at the game start in a fun and
+asymmetrical way.
 
-Released under GPL v3.
+Primary resource generating industries are placed somewhat close to towns in
+large clusters. Secondary processing industries are placed randomly as
+before. Tertiary destination industries are placed inside towns. Farms are used
+to fill in the space that's left.
 
-WARNING: This script changes some game settings, see Usage below.
+## Installation
 
-Note: 
-- This script can take a while with large maps and/or some setting combinations.
-- For large maps set debug = 2 to see where the script gets stuck and tweak the
-  settings to speed it up on the fly. (importantly: Prospect abnormal industries 
-  rather than use methods? = true)
-- The script will say "Built all industry class types" when done in the GS Debug menu.
+Put the repo files in `<OpenTTD path>\game\Industry_Placer`
 
-Requires
---------
+## Usage
 
-Superlib*	v35
-MinchinWeb*	v6
+After choosing a compatible industry set, make sure industry is "funding only".
+Configure the game script and once you start the game with it, wait for it to
+finish. It may take a while on longer maps, and opening the AI/Game Script Debug
+can help pass the time. Remember, hitting 'fast forward' in the game makes
+scripts run faster!
 
-*Note these are the Game Script versions of these libraries.
+The script in particular may appear to 'hang' when it's first getting started,
+as it is building and randomizing a tile list.
 
-NewGrf
-------
+## Compatible Industry NewGRFs
 
-Newgrf compatible as long as the settings are consistent with any 
-extra requirements in the newgrf industries (eg Pikkas PBI).
+So far, only the default temperate industry set, FIRS Steeltown, FIRS North
+America, and FIRS Extreme have support. Additional NewGRFs can be defined and
+customized by modifying the `RegisterIndustryGRF` function in `main.nut`.
 
-The script identifies "special" industries by name, so may not pick 
-up these if they are changed by a newgrf.
+## Parameters
 
-Installation
-------------
-TBA
+* Which industry NewGRF are you using?
 
-Recommended you install via the ingame content function.
+Toggle between NewGRFs. Bad things happen if this is wrong.
 
-Usage
------
+* Max industries per town?
 
-- This script must be selected in game from the AI/Script dialogue.
-- Select "parameters", the following will change your game Advanced settings:
+This is the cap on how many tertiary industries can exist in a town.
 
-	General
-	- Max distance from edge for Oil Refineries.
-	- Allow multiple similar industries per town?
+* Tertiary industry distance from town limit
 
-- Set parameters if you do not desire the defaults, the settings are 
-based on a 256 * 256 map.
-- Set the rest from defaults how you desire your game, recommended that 
-you do not make drastic changes first few times.
+This caps how far away a tertiary industry can be from a town.
 
-- Start a new game (with No. of industries = funding only).
-- Pause if not.
-- Open the AI/Game script dialogue and track the progress of the script.
-- If the script is taking a long time, or you are getting errors, set Debug = 2.
-- Modify the available settings as the script runs till it completes.
-- Once "completed" message shows you can unpause and play:).
+* Primary industry distance from town limit
 
-You may get various error msgs with some settings combinations, when industries can not be built. 
-I made an effort to make these msgs somewhat helpful but due to the vast number of combinations
-of settings I cannot provide a exact solution to get the industries to build. Most of the time you
-can tweak the setting a bit to fix and these are intuitive, I leave it to the player to solve
-for their desired settings :) Post on the forum thread if you want some help.
+This caps how close a primary industry can be to a town.
 
-Required game settings
-----------------------
+* Cluster footprint radius
 
-No. of industries				Funding only
-Allow multiple similar industries per town*	Yes (Recommended, not required)
-Max distance from edge for Oil Refineries *	32 (Recommended, not required)
+This sets the (square) radius of a cluster location. Smaller will make for
+smaller clusters.
 
-*These settings are replicated in the script parameters, and affect those 
-in the Advanced Menu.
+* Percent available space for cluster siting required
 
-Recommended map settings
-------------------------
+This sets the acceptable threshold for cluster footprints. Setting this to 100
+will mean only square cluster-zones exist; setting this to 0 means it accepts
+any footprint (and may create clusters with only 1-2 industries).
 
-Towns				Normal
-Terrain type			Hilly (Recommended, not required)
-Sea level			Very low
-Variety distribution		Low
-Edges				All water
-Snow line			4
+* Max industries per cluster
 
-Abnormal industries
--------------------
-Oil Refinery		(temperate + arctic + tropical - must be within X of edge of map)
-Farm			(arctic - must be below snow line)
-Forest			(arctic - must be above snow line)
-Water Supply		(tropical - must be in desert)
+This is the upper cap on industries in a cluster. Other constraints -- distance
+between industries and cluster footprint size & acceptable space -- will dictate
+if this cap is reached.
 
-Special industries
-------------------
-Bank			(temperate + arctic + tropical - must be in towns > 1200 (choose min town pop))
-Oil Rig			(temperate - must be in water (choose a starting year))
-Water Tower		(tropical - must be on desert tiles within a town (choose min town pop))
-Lumber Mill		(tropical - not created, must be in rainforest (choose to create))
+* Space between cluster zones
 
-Notes
------
-No special/abnormal industries in toyland.
-All distance measurements are in ManhattanDistance.
-Method parameters are dynamic in game so you can tweak settings as they are used.
+This is the distance between cluster zones.
 
-Parameters
-----------
+* Space between any two industries
 
-Based on 256 x 256, some settings are scaled for larger / smaller maps.
+This is the distance between any two industries on the map.
 
-General
-- Max distance from edge for Oil Refineries.
-	Linked to the setting in Advanced Settings.
-- Allow multiple similar industries per town?
-	Linked to the setting in Advanced Settings.
-- Prospect abnormal industries rather than use methods?
-	Use this setting when the script is getting stuck at the abnormal industries (see above).
+* Clusters avoid towns above this size
 
-Manage
-- Manage industry amount?
-	Yes to build industries every X months based on current numbers.
-- Industry build rate (months)
-	The waiting period to build more industries.
-- Industry build limit (per refresh)
-	The max number to build every period.
+For large towns, this is the closest a cluster can get. This feature doesn't
+actually work right now.
 
-Debug
-- Log level (higher = print more)
+* Clusters stay this far away from towns above large town cutoff
 
+This defines the 'large town' used in the earlier parameter.
 
-Density
-- Total industries
-	The base number of industries (based on a 256 * 256 map).
-- Min industries %
-	Modifies chances based on total.
-- Max industries %
-	Modifies chances based on total.
-- Primary industries proportion
-	Proportion of "raw producer" industries.
-- Secondary industries proportion
-	Proportion of "processing" industries.
-- Tertiary industries proportion
-	Proportion of "accepting only" industries.
-- Special industries proportion
-	Proportion of "special" industries (see above section).
-- Primary industries spawning method
-	Method to use to spawn "raw producer" industries.
-- Secondary industries spawning method
-	Method to use to spawn "processing" industries.
-- Tertiary industries spawning method
-	Method to use to spawn "accepting only" industries.
+* Spacing between farm fill
 
-Scattered
-	Tries to build with an even distribution, away from other industries and towns.
-- Minimum distance from towns
-- Minimum distance from industries
+This defines how dense farms are in the final step of industry placement.
 
-Cluster
-	Tries to build a cluster of the same industries, USUALLY REQUIRES 
-	MULTI IND PER TOWN TO WORK.
- - Maximum industries per cluster
- - Minimum distance between same cluster industries
- - Maximum distance between same cluster industries
- - Minimum distance between clusters
- - Minimum distance from towns
- - Minimum distance from industries
+* Attempt to build this many clusters of raw industry
 
-Town
-	Tries to build industries close to a town, REQUIRES MULTI IND PER TOWN 
-	above if you activate it here.
- - Minimum population
- - Minimum distance from town
- - Maximum distance from town factor
- 	Used in the calculation of minimum radius from town center (Radius = Houses# * (x / 100)).
- - Maximum total industries per town
- - Minimum distance from other industries
- - Multiple same industries in town?
+This is an upper bound on how many clusters will be attempted. Tiles can be
+exhausted way before this limit is reached.
 
-Special
-	Handles climate-specific, special build type industries.
- - Minimum town pop for Banks
- - Minimum year for Oil Rigs
- - Minimum town pop for Water Towers
- - Build Lumber Mills?
+* Attempt to build this many processing industries
+
+This is an upper bound on how many processing industries will be attempted.
+
+* Attempt to build this many tertiary industries
+
+This is an upper bound on how many tertiary industries will be attempted. Towns
+can be exhausted way before this limit is reached.
+
+* Debug log level - 3 for most verbose
+
+Controls the volume of messages in the debug window.
