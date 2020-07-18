@@ -24,7 +24,7 @@ class IndustryPlacer extends GSController {
     raw_industry_min = 0;
     proc_industry_min = 0;
     tertiary_industry_min = 0;
-    debug_level = 0;
+    debug_level = 3;
 
     // End config set variables
     company_id = 0;
@@ -126,23 +126,26 @@ function IndustryPlacer::InArray(item, array) {
 function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
     local name = "";
     switch(industry_newgrf) {
+    case 8:
+        name = "FIRS 4 Steeltown";
+        break;
     case 7:
-        name = "FIRS Extreme";
+        name = "FIRS 3 Extreme";
         break;
     case 6:
-        name = "FIRS In A Hot Country";
+        name = "FIRS 3 In A Hot Country";
         break;
     case 5:
-        name = "FIRS Steeltown";
+        name = "FIRS 3 Steeltown";
         break;
     case 4:
-        name = "FIRS Tropic Basic";
+        name = "FIRS 3 Tropic Basic";
         break;
     case 3:
-        name = "FIRS Arctic Basic";
+        name = "FIRS 3 Arctic Basic";
         break;
     case 2:
-        name = "FIRS Temperate Basic";
+        name = "FIRS 3 Temperate Basic";
         break;
     case 1:
         name = "North American FIRS";
@@ -227,7 +230,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                          "Mixed Farm"
                          ];
     }
-    if(name == "FIRS Temperate Basic") {
+    if(name == "FIRS 3 Temperate Basic") {
         water_based_industries = [
                                   "Fishing Grounds",
                                   "Dredging Site"
@@ -241,7 +244,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                                           "Orchard and Piggery"
                                           ];
     }
-    if(name == "FIRS Arctic Basic") {
+    if(name == "FIRS 3 Arctic Basic") {
         water_based_industries = [
                                   "Fishing Grounds"
                                   ];
@@ -258,7 +261,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                                       "Forest"
                                       ];
     }
-    if(name == "FIRS Tropic Basic") {
+    if(name == "FIRS 3 Tropic Basic") {
         water_based_industries = [
                                   "Fishing Grounds"
                                   ];
@@ -279,7 +282,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                          "Arable Farm"
                          ];
     }
-    if(name == "FIRS Steeltown") {
+    if(name == "FIRS 3 Steeltown") {
         shore_based_industries = [
                                   "Bulk Terminal",
                                   "Port",
@@ -301,7 +304,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                            "Beach"
                            ];
     }
-    if(name == "FIRS In A Hot Country") {
+    if(name == "FIRS 3 In A Hot Country") {
         shore_based_industries = [
                                   "Bulk Terminal",
                                   "Liquids Terminal",
@@ -333,7 +336,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                          "Mixed Farm"
                          ];
     }
-    if(name == "FIRS Extreme") {
+    if(name == "FIRS 3 Extreme") {
         shore_based_industries = [
                                   "Bulk Terminal",
                                   "Fishing Harbor",
@@ -372,6 +375,28 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                            "Oil Rig",
                            "Recycling Depot",
                            "Recycling Plant",
+                           "Beach"
+                           ];
+    }
+    if(name == "FIRS 4 Steeltown") {
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Wharf"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store"
+                                     ];
+        neartown_based_industries = [
+                                     "Builders Yard",
+                                     "Vehicle Distributor"
+                                     ];
+        nonsnowdesert_based_industries = [
+                                          "Farm"
+                                          ];
+        farm_override = [
+                         "Farm"
+                         ];
+        skip_industries = [
                            "Beach"
                            ];
     }
@@ -1199,7 +1224,7 @@ function IndustryPlacer::ListMinMaxXY(tile_list, two_tile) {
         output_tile_list.AddTile(GSMap.GetTileIndex(x_max, y_max));
     } else {
         output_tile_list.AddTile(x_max_tile);
-        output_tile_list.AddTile(x_min_tile);
+       output_tile_list.AddTile(x_min_tile);
         output_tile_list.AddTile(y_max_tile);
         output_tile_list.AddTile(y_min_tile);
     }

@@ -26,12 +26,13 @@ class IndustryPlacer extends GSInfo
         AddLabels("industry_newgrf", {
             _0 = "None",
             _1 = "North American FIRS",
-            _2 = "FIRS Temperate Basic",
-            _3 = "FIRS Arctic Basic",
-            _4 = "FIRS Tropic Basic",
-            _5 = "FIRS Steeltown",
-            _6 = "FIRS In A Hot Country",
-            _7 = "FIRS Extreme"
+            _2 = "FIRS 3 Temperate Basic",
+            _3 = "FIRS 3 Arctic Basic",
+            _4 = "FIRS 3 Tropic Basic",
+            _5 = "FIRS 3 Steeltown",
+            _6 = "FIRS 3 In A Hot Country",
+            _7 = "FIRS 3 Extreme",
+            _8 = "FIRS 4 Steeltown"
         });
         AddSetting({
             name = "town_industry_limit",
@@ -205,10 +206,10 @@ class IndustryPlacer extends GSInfo
             name = "debug_level",
             description = "Debug log level - 3 for most verbose",
             flags = CONFIG_INGAME,
-            easy_value = 0,
-            medium_value = 0,
-            hard_value = 0,
-            custom_value = 0,
+            easy_value = 3,
+            medium_value = 3,
+            hard_value = 3,
+            custom_value = 3,
             min_value = 0,
             max_value = 3,
             step_size = 1
