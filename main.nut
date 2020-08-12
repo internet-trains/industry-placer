@@ -24,7 +24,7 @@ class IndustryPlacer extends GSController {
     raw_industry_min = 0;
     proc_industry_min = 0;
     tertiary_industry_min = 0;
-    debug_level = 3;
+    debug_level = 0;
 
     // End config set variables
     company_id = 0;
@@ -375,7 +375,7 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
                            "Oil Rig",
                            "Recycling Depot",
                            "Recycling Plant",
-                           "Beach"
+                           "Smithy Forge"
                            ];
     }
     if(name == "FIRS 4 Steeltown") {
