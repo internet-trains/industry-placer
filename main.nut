@@ -95,6 +95,7 @@ class IndustryPlacer extends GSController {
         this.raw_industry_min = GSController.GetSetting("raw_industry_min");
         this.proc_industry_min = GSController.GetSetting("proc_industry_min");
         this.tertiary_industry_min = GSController.GetSetting("tertiary_industry_min");
+        this.debug_level = GSController.GetSetting("debug_level");
     }
 }
 
