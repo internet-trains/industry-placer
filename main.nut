@@ -127,6 +127,9 @@ function IndustryPlacer::InArray(item, array) {
 function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
     local name = "";
     switch(industry_newgrf) {
+    case 9:
+        name = "XIS";
+        break;
     case 8:
         name = "FIRS 4 Steeltown";
         break;
@@ -400,6 +403,49 @@ function IndustryPlacer::RegisterIndustryGRF(industry_newgrf) {
         skip_industries = [
                            "Beach"
                            ];
+    }
+    if(name == "XIS") {
+        water_based_industries = [
+                                  "Dredging Site",
+                                  "Fishing Grounds",
+                                  "Oil Rig"
+                                  ];
+        shore_based_industries = [
+                                  "Bulk Terminal",
+                                  "Fishing Harbour",
+                                  "Liquids Terminal",
+                                  "Port",
+                                  "Wharf"
+                                  ];
+        townbldg_based_industries = [
+                                     "General Store",
+                                     "Grocer's Shop",
+                                     "Hardware Store"
+                                     ];
+        neartown_based_industries = [
+                                     "Recycling Depot",
+                                     "Vehicle Dealer"
+                                     ];
+        nondesert_based_industries = [
+                                      "Forest"
+                                      ];
+        nonsnow_based_industries = [
+                                    "Fruit Plantation"
+                                    ];
+        nonsnowdesert_based_industries = [
+                                          "Arable Farm",
+                                          "Dairy Farm",
+                                          "Mixed Farm",
+                                          "Rubber Plantation"
+                                          ];
+        tertiary_override = [
+                             "Recycling Depot",
+                             "Fishing Harbour"
+                             ];
+        farm_override = [
+                         "Arable Farm",
+                         "Mixed Farm"
+                         ];
     }
 
     foreach(ind_id, value in industry_classes) {

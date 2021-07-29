@@ -32,7 +32,8 @@ class IndustryPlacer extends GSInfo
             _5 = "FIRS 3 Steeltown",
             _6 = "FIRS 3 In A Hot Country",
             _7 = "FIRS 3 Extreme",
-            _8 = "FIRS 4 Steeltown"
+            _8 = "FIRS 4 Steeltown",
+            _9 = "XIS"
         });
         AddSetting({
             name = "town_industry_limit",
